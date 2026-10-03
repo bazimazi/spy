@@ -1,0 +1,765 @@
+:root {
+  /* Palette pulled from the Figma file */
+  --c-bg: #4c3a51;
+  --c-bg-deep: #3f2e49;
+  --c-border: #73667b;
+  --c-border-soft: #c1bbc5;
+  --c-primary: #f7a632;
+  --c-on-primary: #1f1f1f;
+  --c-text: #ffffff;
+  --c-text-muted: #d5d5d6;
+  --c-text-dim: #acacac;
+  --c-danger: #b73638;
+
+  --radius-card: 12px;
+  --radius-button: 8px;
+  --shadow-card: 0 12px 32px rgba(0, 0, 0, 0.35);
+
+  font-family: 'Vazirmatn', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  line-height: 1.6;
+  color: var(--c-text);
+  background-color: #1a1420;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -webkit-tap-highlight-color: transparent;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  margin: 0;
+  min-height: 100dvh;
+}
+
+body {
+  background-color: var(--c-bg);
+}
+
+#root {
+  display: flex;
+  justify-content: center;
+}
+
+button {
+  font: inherit;
+  cursor: pointer;
+  border: none;
+  background: none;
+  color: inherit;
+  -webkit-appearance: none;
+}
+
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+/* App shell — mobile-first frame matching the 360-wide Figma artboards.
+   The brick-wall background is the SVG exported from Figma, set to repeat
+   vertically so it covers screens taller than the original artboard. */
+.screen {
+  position: relative;
+  width: 100%;
+  max-width: 420px;
+  min-height: 100dvh;
+  background-color: var(--c-bg);
+  background-repeat: repeat-y;
+  background-position: top center;
+  background-size: 100% auto;
+  overflow: hidden;
+  isolation: isolate;
+}
+
+/* Background artwork layer (sits above the brick wall, below `.content`). */
+.screen__bg {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.content {
+  position: relative;
+  z-index: 1;
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  padding: 80px 16px 24px; /* leave room for the absolutely-positioned top-actions */
+}
+
+/* Top right corner controls (home/help) */
+.top-actions {
+  position: absolute;
+  top: 24px;
+  right: 16px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  z-index: 2;
+}
+
+.icon-btn {
+  width: 40px;
+  height: 40px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  color: var(--c-text);
+  transition: background 120ms ease;
+}
+
+.icon-btn:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.help-badge {
+  width: 28px;
+  height: 28px;
+  border-radius: 999px;
+  background: var(--c-primary);
+  color: var(--c-on-primary);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 16px;
+  line-height: 1;
+}
+
+/* Primary action button */
+.btn {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 30px;
+  width: 100%;
+  border-radius: var(--radius-button);
+  background-color: var(--c-primary);
+  color: var(--c-text);
+  font-weight: 500;
+  font-size: 16px;
+  transition: filter 120ms ease, transform 120ms ease;
+}
+
+.btn:hover:not(:disabled) {
+  filter: brightness(1.05);
+}
+
+.btn:active:not(:disabled) {
+  transform: translateY(1px);
+}
+
+.btn--ghost {
+  background: transparent;
+  color: var(--c-primary);
+  border: 1px solid var(--c-primary);
+}
+
+/* Title used on the home screen and end screen */
+.title {
+  font-weight: 500;
+  font-size: 24px;
+  line-height: 1.4;
+  margin: 0;
+  color: var(--c-primary);
+}
+
+.subtitle {
+  font-size: 14px;
+  color: var(--c-text-muted);
+  margin: 0;
+}
+
+/* Setting rows on the home screen */
+.settings {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  width: 100%;
+}
+
+.setting-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 12px;
+  border: 1px solid var(--c-border);
+  border-radius: var(--radius-button);
+  background: rgba(0, 0, 0, 0.08);
+}
+
+.setting-row__label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--c-text);
+  font-size: 16px;
+}
+
+/* Emoji icons used in the settings rows — rendered with the OS color emoji
+   font so the glyph keeps the same multi-color look as in the Figma frame. */
+.emoji-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  font-size: 22px;
+  line-height: 1;
+  font-family: 'Apple Color Emoji', 'Segoe UI Emoji', 'Noto Color Emoji',
+    'Twemoji Mozilla', sans-serif;
+}
+
+/* Raster icons exported from Figma. Pixel-art assets, so disable smoothing
+   to keep the crisp blocky edges seen in the source frame. */
+.img-icon {
+  width: 28px;
+  height: 28px;
+  flex-shrink: 0;
+  object-fit: contain;
+  image-rendering: pixelated;
+  image-rendering: -moz-crisp-edges;
+  image-rendering: crisp-edges;
+  user-select: none;
+}
+
+.setting-row__value {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--c-text);
+  font-size: 14px;
+  background: none;
+  padding: 6px 0;
+}
+
+.setting-row__value-text {
+  min-width: 1.5em;
+  text-align: center;
+}
+
+.stepper-btn {
+  width: 32px;
+  height: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  color: var(--c-text);
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.stepper-btn:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.14);
+}
+
+/* Toggle row (spy guide) */
+.toggle-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: var(--c-text);
+  font-size: 14px;
+}
+
+.toggle {
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
+  background: transparent;
+  border: 2px solid var(--c-primary);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--c-on-primary);
+  flex-shrink: 0;
+}
+
+.toggle--on {
+  background: var(--c-primary);
+}
+
+/* Validation message */
+.error {
+  color: #f8b3b3;
+  font-size: 13px;
+  text-align: center;
+}
+
+/* === Card / deck-of-cards visual ===
+   Mirrors the Figma `Group 7` group (366×508) which contains three offset
+   rectangles plus a foreground card, all 320×478 in size. The container
+   keeps the 366×508 aspect so each layer can land at its exact offset. */
+.card-stack {
+  position: relative;
+  width: 100%;
+  max-width: 366px;
+  aspect-ratio: 366 / 508;
+  margin: 24px auto;
+  isolation: isolate;
+}
+
+.card-stack > * {
+  position: absolute;
+  /* Card geometry is 320×478, expressed proportionally so it scales. */
+  width: calc(320 / 366 * 100%);
+  height: calc(478 / 508 * 100%);
+  background: var(--c-bg-deep);
+  border: 4px solid var(--c-border);
+  border-radius: 12px;
+}
+
+.card-stack__layer {
+  pointer-events: none;
+}
+
+/* Layer 3 — deepest, painted first. Figma offset: (46, 30). */
+.card-stack__layer--3 {
+  top: calc(26 / 500 * 100%);
+  left: calc(38 / 500 * 100%);
+}
+
+/* Layer 2 — middle. Figma offset: (28, 20). Width is 312 in Figma. */
+.card-stack__layer--2 {
+  top: calc(17 / 500 * 100%);
+  left: calc(26 / 500 * 100%);
+}
+
+/* Layer 1 — just behind the foreground. Figma offset: (10, 10). */
+.card-stack__layer--1 {
+  top: calc(9 / 500 * 100%);
+  left: calc(13 / 500 * 100%);
+}
+
+/* Foreground card — anchored top-left like the Figma `Group 10`. */
+.card {
+  top: 0;
+  left: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  padding: 24px 28px;
+  text-align: center;
+  color: var(--c-text);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.35);
+  overflow: hidden;
+}
+
+.card.is-interactive {
+  cursor: pointer;
+  transition: transform 120ms ease, filter 120ms ease;
+}
+
+.card.is-interactive:hover {
+  filter: brightness(1.05);
+}
+
+.card.is-interactive:active {
+  transform: translateY(1px);
+}
+
+.card--front {
+  border-color: var(--c-border-soft);
+}
+
+/* Faded full-card silhouette behind the title on the back card. */
+.card-bg-art {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 70%;
+  max-width: 220px;
+  height: auto;
+  opacity: 0.25;
+  pointer-events: none;
+  user-select: none;
+  z-index: 0;
+}
+
+.card-art {
+  width: 60%;
+  max-width: 185px;
+  height: auto;
+  flex-shrink: 0;
+  user-select: none;
+  pointer-events: none;
+  position: relative;
+  z-index: 1;
+}
+
+/* Circular spy face used on the spy reveal card. */
+.card-art--face {
+  width: 140px;
+  max-width: 45%;
+  image-rendering: auto;
+}
+
+.card-text {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  position: relative;
+  z-index: 1;
+}
+
+.card-title {
+  margin: 0;
+  font-size: 24px;
+  font-weight: 500;
+  line-height: 1.4;
+  color: var(--c-primary);
+}
+
+.card-title--muted {
+  color: var(--c-text-dim);
+}
+
+.card-sub {
+  margin: 0;
+  font-size: 16px;
+  color: var(--c-text-muted);
+  line-height: 1.4;
+}
+
+.card-sub--muted {
+  color: var(--c-text-dim);
+}
+
+/* === Card transition animations ===
+   On "pass", the foreground card is dealt up and off the top of the deck
+   (`card-deal-out`) while the three deck layers stay put, then the next
+   player's card rises into place (`card-rise-in` on the back card). The
+   deal-out fill is `forwards` so the card holds its off-screen state until
+   React unmounts it; entrance animations intentionally use no fill so the
+   resting transform reverts to base and the interactive `:active` press
+   still works. */
+.card.is-dealing-out {
+  animation: card-deal-out 520ms cubic-bezier(0.45, 0, 0.7, 0.2) forwards;
+  pointer-events: none;
+  will-change: transform, opacity;
+  z-index: 2;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .card--back {
+    animation: card-rise-in 360ms cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  .card--front {
+    animation: card-reveal-in 300ms ease;
+  }
+
+  /* Keep the deal-out override after the entrance rules so it wins. */
+  .card.is-dealing-out {
+    animation: card-deal-out 520ms cubic-bezier(0.45, 0, 0.7, 0.2) forwards;
+  }
+}
+
+/* Reduced motion: skip the flourish but still emit `animationend` quickly so
+   the pass-to-next flow completes. */
+@media (prefers-reduced-motion: reduce) {
+  .card.is-dealing-out {
+    animation: card-fade-out 180ms ease forwards;
+  }
+}
+
+@keyframes card-deal-out {
+  0% {
+    transform: translateY(0) rotate(0deg) scale(1);
+    opacity: 1;
+  }
+  18% {
+    transform: translateY(-16px) rotate(-1.5deg) scale(1.03);
+    opacity: 1;
+  }
+  70% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(-135%) rotate(-6deg) scale(0.92);
+    opacity: 0;
+  }
+}
+
+@keyframes card-rise-in {
+  0% {
+    opacity: 0;
+    transform: translateY(18px) scale(0.96);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes card-reveal-in {
+  0% {
+    opacity: 0;
+    transform: scale(0.92);
+  }
+  60% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes card-fade-out {
+  to {
+    opacity: 0;
+  }
+}
+
+/* Stopwatch artwork shared by the countdown (3-2-1) and the round timer.
+   Matches the prominent stopwatch in the Figma start/waiting frames. */
+.stopwatch {
+  display: block;
+  width: 168px;
+  height: 168px;
+  margin: 0 auto 8px;
+  object-fit: contain;
+  user-select: none;
+}
+
+/* When the round drops under 10s the red stopwatch ticks with a subtle
+   pulse to reinforce the urgency shown in the "waiting page-less 10s" frame. */
+@media (prefers-reduced-motion: no-preference) {
+  .stopwatch.is-warn {
+    animation: stopwatch-pulse 1s ease-in-out infinite;
+  }
+}
+
+@keyframes stopwatch-pulse {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.06);
+  }
+}
+
+.countdown {
+  font-size: 96px;
+  font-weight: 600;
+  color: var(--c-primary);
+  text-align: center;
+  line-height: 1;
+}
+
+.countdown-text {
+  text-align: center;
+  font-size: 16px;
+  color: var(--c-text-muted);
+  margin: 12px 0 0;
+  white-space: pre-line;
+}
+
+/* Timer screen */
+.timer-display {
+  font-size: 56px;
+  font-weight: 500;
+  color: var(--c-text);
+  text-align: center;
+  letter-spacing: 0.04em;
+  font-variant-numeric: tabular-nums;
+}
+
+.timer-display.is-warn {
+  color: var(--c-danger);
+}
+
+.timer-hint {
+  font-size: 13px;
+  color: var(--c-text-muted);
+  text-align: center;
+  margin: 12px auto;
+  max-width: 280px;
+}
+
+/* End screen — spy reveal */
+.end-hero {
+  display: block;
+  width: 160px;
+  height: 160px;
+  margin: 0 auto 8px;
+  border-radius: 999px;
+  object-fit: cover;
+  background: var(--c-bg-deep);
+  box-shadow: var(--shadow-card);
+  user-select: none;
+}
+
+.end-reveal {
+  margin: 0;
+  font-size: 18px;
+  color: var(--c-text-muted);
+  text-align: center;
+  line-height: 1.5;
+}
+
+.end-reveal__value {
+  color: var(--c-primary);
+  font-weight: 600;
+}
+
+.end-reveal--muted {
+  font-size: 14px;
+  color: var(--c-text-dim);
+}
+
+/* End screen role list */
+.role-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+}
+
+.role-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 14px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--c-border);
+}
+
+.role-row.is-spy {
+  border-color: var(--c-primary);
+  background: rgba(247, 166, 50, 0.08);
+}
+
+.role-row__name {
+  font-size: 16px;
+  color: var(--c-text);
+}
+
+.role-row__tag {
+  font-size: 14px;
+  color: var(--c-text-muted);
+}
+
+.role-row.is-spy .role-row__tag {
+  color: var(--c-primary);
+  font-weight: 500;
+}
+
+/* Guide list */
+.guide-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.guide-item__title {
+  font-size: 14px;
+  color: var(--c-primary);
+  margin: 0 0 4px;
+  font-weight: 500;
+}
+
+.guide-item__body {
+  font-size: 13px;
+  line-height: 1.9;
+  color: var(--c-text-muted);
+  margin: 0;
+}
+
+/* Layout helpers */
+.stack {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  width: 100%;
+}
+
+.center-block {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+  width: 100%;
+  gap: 12px;
+}
+
+.footer-actions {
+  margin-top: auto;
+  padding-top: 16px;
+}
+
+.scroll-area {
+  flex: 1;
+  overflow-y: auto;
+  padding-bottom: 16px;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .countdown {
+    animation: pop 1s ease-in-out;
+  }
+}
+
+@keyframes pop {
+  0% {
+    transform: scale(0.6);
+    opacity: 0;
+  }
+  40% {
+    transform: scale(1.05);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+/* Home screen artwork — placed in the dedicated background layer behind
+   `.content`. Positions match the Figma artboard (360px wide). */
+.home-spotlight {
+  position: absolute;
+  top: 0;
+  right: 0;
+  height: 100%;
+  user-select: none;
+}
+
+.home-hero {
+  position: absolute;
+  bottom: 75px;
+  right: 35px;
+  width: 260px;
+  height: auto;
+  user-select: none;
+}
+
+/* Slim toggle row for the "spy guide" option, matching the Figma layout. */
+.spy-guide-row {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  align-self: flex-end;
+  background: transparent;
+  color: var(--c-text);
+  font-size: 14px;
+  margin-top: 12px;
+  padding: 4px;
+}
