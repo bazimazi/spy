@@ -1,7 +1,8 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
-import type { AnimationEvent } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Screen } from '../components/Screen'
 import { Card } from '../components/Card'
+import { RoundExitButton } from '../components/RoundExitButton'
+import { GuideScreen } from './GuideScreen'
 import { toFa } from '../game/logic'
 import type { GameConfig, RoundState } from '../game/types'
 import spyCardSrc from '../assets/spy-card.svg'
@@ -10,101 +11,81 @@ import spyFaceSrc from '../assets/logo.png'
 interface RevealScreenProps {
   config: GameConfig
   round: RoundState
-  /** Zero-based index of the current player. */
   playerIndex: number
   onNext: () => void
+  onHome: () => void
 }
 
-/** Upper bound for the deal-out animation; the fallback timer uses it so the
- *  flow can never stall if `animationend` is missed (e.g. tab backgrounded). */
-const DEAL_OUT_MS = 560
-
-/**
- * One player at a time: tap the deck to flip → see your role → tap again to
- * pass the phone. Passing deals the current card up and off the top of the
- * deck before the next player's card rises into place. Layouts mirror the
- * Figma frames `card-back`, `card-front-citisen`, and `card-front-spy`.
- */
-export function RevealScreen({ config, round, playerIndex, onNext }: RevealScreenProps) {
+export function RevealScreen({ config, round, playerIndex, onNext, onHome }: RevealScreenProps) {
   const [revealed, setRevealed] = useState(false)
-  const [dealing, setDealing] = useState(false)
-  const advanced = useRef(false)
+  const [guideOpen, setGuideOpen] = useState(false)
+  const hideButton = useRef<HTMLButtonElement>(null)
+  const cardArea = useRef<HTMLDivElement>(null)
+  const hadReveal = useRef(false)
   const isSpy = round.spyIndices.includes(playerIndex)
+  const lastPlayer = playerIndex === config.playerCount - 1
 
-  // Advance exactly once per pass, whichever fires first: the card's
-  // `animationend` or the fallback timer.
-  const advance = useCallback(() => {
-    if (advanced.current) return
-    advanced.current = true
-    setDealing(false)
-    setRevealed(false)
-    onNext()
-  }, [onNext])
-
-  // Fallback: guarantee the pass completes even if `animationend` never lands.
   useEffect(() => {
-    if (!dealing) return
-    const timer = window.setTimeout(advance, DEAL_OUT_MS + 120)
-    return () => window.clearTimeout(timer)
-  }, [dealing, advance])
+    if (revealed) {
+      hadReveal.current = true
+      hideButton.current?.focus({ preventScroll: true })
+    } else if (hadReveal.current && !document.hidden) {
+      cardArea.current?.querySelector<HTMLButtonElement>('button')?.focus({ preventScroll: true })
+    }
+  }, [revealed])
 
-  const handleReveal = () => {
-    if (dealing) return
-    setRevealed(true)
-  }
+  useEffect(() => {
+    const hide = () => { if (document.hidden) setRevealed(false) }
+    const hideOnLeave = () => setRevealed(false)
+    document.addEventListener('visibilitychange', hide)
+    window.addEventListener('pagehide', hideOnLeave)
+    return () => {
+      document.removeEventListener('visibilitychange', hide)
+      window.removeEventListener('pagehide', hideOnLeave)
+    }
+  }, [])
 
-  const handlePass = () => {
-    if (dealing) return
-    advanced.current = false
-    setDealing(true)
-  }
+  if (guideOpen) return <GuideScreen onClose={() => setGuideOpen(false)} />
 
-  const handleDealOutEnd = (event: AnimationEvent<HTMLElement>) => {
-    // Ignore bubbled child animations and any non-dealing state.
-    if (event.target !== event.currentTarget) return
-    if (!dealing) return
-    advance()
-  }
-
-  if (!revealed) {
-    return (
-      <Screen>
-        <div className="center-block">
-          <Card key={`back-${playerIndex}`} variant="back" onClick={handleReveal}>
+  return (
+    <Screen className="reveal-screen" topActions={<>
+      <button type="button" className="icon-btn" aria-label="راهنمای بازی"
+        onClick={() => { setRevealed(false); setGuideOpen(true) }}>
+        <span className="help-badge" aria-hidden>?</span>
+      </button>
+      <RoundExitButton onExit={onHome} onRequest={() => setRevealed(false)} />
+    </>}>
+      <h1 className="visually-hidden" tabIndex={-1} data-screen-title>نوبت بازیکن {toFa(playerIndex + 1)}</h1>
+      <div ref={cardArea} className="reveal-deck">
+        <Card key={revealed ? 'front' : 'back'} variant={revealed ? 'front' : 'back'}
+          onClick={revealed ? undefined : () => setRevealed(true)}
+          label={revealed ? undefined : `دیدن کارت بازیکن ${toFa(playerIndex + 1)}`}>
+          {!revealed ? <>
             <img className="card-bg-art" src={spyCardSrc} alt="" aria-hidden />
             <div className="card-text">
               <h2 className="card-title card-title--muted">بازیکن {toFa(playerIndex + 1)}</h2>
-              <p className="card-sub card-sub--muted">برای دیدن کلمه روی کارت بزن</p>
+              <p className="card-sub">برای دیدن نقش و کلمه، روی کارت بزن</p>
             </div>
-          </Card>
-        </div>
-      </Screen>
-    )
-  }
-
-  return (
-    <Screen>
-      <div className="center-block">
-        <Card
-          key={`front-${playerIndex}`}
-          variant="front"
-          onClick={handlePass}
-          className={dealing ? 'is-dealing-out' : undefined}
-          onAnimationEnd={handleDealOutEnd}
-        >
-          {isSpy ? (
-            <img className="card-art card-art--face" src={spyFaceSrc} alt="" aria-hidden />
-          ) : null}
-          <div className="card-text">
-            <h2 className="card-title">{isSpy ? 'جاسوس' : round.word.word}</h2>
-            <p className="card-sub">
-              {isSpy && config.spyGuide
-                ? `موضوع: ${round.word.category}`
-                : 'دوباره بزن و گوشی رو به نفر بعدی بده'}
-            </p>
-          </div>
+          </> : <>
+            {isSpy && <img className="card-art card-art--face" src={spyFaceSrc} alt="" aria-hidden />}
+            <div className="card-text">
+              <h2 className="card-title secret-word">{isSpy ? 'جاسوس' : round.word.word}</h2>
+              <button ref={hideButton} type="button" className="card-sub card-pass"
+                onClick={() => { setRevealed(false); onNext() }}>
+                {lastPlayer ? 'کارت رو پنهان کن؛ همه آماده‌ایم' : 'کارت رو پنهان کن و گوشی رو بده'}
+              </button>
+            </div>
+            {isSpy && config.spyGuide && <p className="card-role-hint">راهنمای تو: {round.word.category}</p>}
+            <p className="card-tip">{isSpy
+              ? 'از جواب‌ها سرنخ بگیر؛ کلمه رو حدس بزن.'
+              : 'سؤال غیرمستقیم بپرس؛ خود کلمه رو نگو.'}</p>
+          </>}
         </Card>
       </div>
+      <footer className="reveal-progress">
+        <p><span>کارت {toFa(playerIndex + 1)} از {toFa(config.playerCount)}</span><span>فقط بازیکن {toFa(playerIndex + 1)} نگاه کنه</span></p>
+        <progress className="round-progress" value={playerIndex + 1} max={config.playerCount} aria-label="پیشرفت پخش کارت‌ها" />
+      </footer>
     </Screen>
   )
 }

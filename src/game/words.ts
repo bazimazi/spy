@@ -1,24 +1,45 @@
-import type { SecretWord } from './types'
+import type { SecretWord, WordCategory } from './types'
 
-/** Persian secret-word vocabulary used for picking a round word. */
-export const VOCAB: SecretWord[] = [
-  { word: 'آتشگاه', category: 'مکان' },
-  { word: 'کتابخانه', category: 'مکان' },
-  { word: 'بیمارستان', category: 'مکان' },
-  { word: 'استخر', category: 'مکان' },
-  { word: 'مدرسه', category: 'مکان' },
-  { word: 'فرودگاه', category: 'مکان' },
-  { word: 'سینما', category: 'تفریح' },
-  { word: 'تئاتر', category: 'تفریح' },
-  { word: 'پارک', category: 'تفریح' },
-  { word: 'کنسرت', category: 'تفریح' },
-  { word: 'پیتزا', category: 'غذا' },
-  { word: 'کباب', category: 'غذا' },
-  { word: 'قورمه‌سبزی', category: 'غذا' },
-  { word: 'فوتبال', category: 'ورزش' },
-  { word: 'کوهنوردی', category: 'ورزش' },
-  { word: 'شنا', category: 'ورزش' },
-  { word: 'گیتار', category: 'اشیا' },
-  { word: 'دوربین', category: 'اشیا' },
-  { word: 'ساعت', category: 'اشیا' },
-]
+export const CATEGORIES: WordCategory[] = ['مکان', 'تفریح', 'غذا', 'ورزش', 'اشیا']
+
+// Familiar, distinct words: each should support several indirect questions.
+const WORDS: Record<WordCategory, string[]> = {
+  مکان: [
+    'کتابخانه', 'بیمارستان', 'استخر', 'مدرسه', 'فرودگاه',
+    'رستوران', 'هتل', 'بانک', 'موزه', 'ایستگاه قطار',
+    'نانوایی', 'داروخانه', 'آرایشگاه', 'باغ‌وحش', 'فروشگاه',
+    'آشپزخانه', 'مزرعه', 'ساحل', 'جنگل', 'کویر',
+  ],
+  تفریح: [
+    'سینما', 'تئاتر', 'پارک', 'کنسرت', 'شهربازی',
+    'پیک‌نیک', 'سفر', 'کمپینگ', 'ماهیگیری', 'عکاسی',
+    'نقاشی', 'شطرنج', 'بازی ویدیویی', 'باغبانی', 'کتاب خواندن',
+    'بادبادک‌بازی', 'کاردستی', 'پازل', 'موسیقی گوش دادن', 'قایق‌سواری',
+  ],
+  غذا: [
+    'پیتزا', 'کباب', 'قورمه‌سبزی', 'آش رشته', 'زرشک‌پلو',
+    'ته‌چین', 'عدسی', 'املت', 'ماکارونی', 'ساندویچ',
+    'سوپ', 'سالاد', 'بستنی', 'کیک', 'شکلات',
+    'چای', 'قهوه', 'دوغ', 'هندوانه', 'انار',
+  ],
+  ورزش: [
+    'فوتبال', 'کوهنوردی', 'شنا', 'والیبال', 'بسکتبال',
+    'تنیس', 'پینگ‌پنگ', 'دوچرخه‌سواری', 'دویدن', 'کشتی',
+    'بوکس', 'کاراته', 'اسکی', 'اسکیت', 'ژیمناستیک',
+    'یوگا', 'وزنه‌برداری', 'تیراندازی', 'اسب‌سواری', 'بدمینتون',
+  ],
+  اشیا: [
+    'گیتار', 'دوربین', 'ساعت', 'چتر', 'عینک',
+    'کوله‌پشتی', 'کلید', 'تلفن', 'لپ‌تاپ', 'تلویزیون',
+    'یخچال', 'جاروبرقی', 'اتو', 'آینه', 'چراغ‌قوه',
+    'قیچی', 'مداد', 'مسواک', 'بالش', 'کفش',
+  ],
+}
+
+export const VOCAB: SecretWord[] = CATEGORIES.flatMap((category) =>
+  WORDS[category].map((word) => ({ word, category })),
+)
+
+export function getWordPool(category: WordCategory | 'all'): SecretWord[] {
+  return category === 'all' ? VOCAB : VOCAB.filter((word) => word.category === category)
+}

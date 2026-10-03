@@ -6,6 +6,7 @@ interface CardProps {
   onClick?: () => void
   /** Extra class names for the foreground card (used to drive animations). */
   className?: string
+  label?: string
   /** Fires when a CSS animation on the foreground card ends. */
   onAnimationEnd?: (event: AnimationEvent<HTMLElement>) => void
 }
@@ -24,6 +25,7 @@ export function Card({
   variant = 'front',
   onClick,
   className,
+  label,
   onAnimationEnd,
   children,
 }: PropsWithChildren<CardProps>) {
@@ -38,6 +40,7 @@ export function Card({
       <Element
         type={isInteractive ? 'button' : undefined}
         onClick={onClick}
+        aria-label={label}
         onAnimationEnd={onAnimationEnd}
         className={`card card--${variant}${isInteractive ? ' is-interactive' : ''}${
           className ? ` ${className}` : ''

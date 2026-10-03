@@ -36,7 +36,7 @@ function EmojiIcon({ children, className, ...rest }: EmojiIconProps) {
   )
 }
 
-/** Raster icon used by the home-screen settings rows — pulled straight from
+/** Raster icon used by the home-screen settings rows - pulled straight from
  *  the Figma frame so the pixel artwork stays identical. */
 function ImageIcon({ src, className, ...rest }: ImageIconProps & { src: string }) {
   return (
