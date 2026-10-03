@@ -48,13 +48,21 @@ and transitions remain enabled. Future contributors should also follow
   Progress stays below the deck. The guide can be opened without losing the
   current player; opening it or hiding the page conceals revealed cards.
 - **Ready** - everyone gets time to settle in. A randomly chosen player starts
-  the questions; the timer starts only when the group chooses to begin.
-- **Countdown / Timer** - 3-2-1, then a Persian MM:SS display, pause/resume,
-  optional extra minutes, question ideas, and a final-ten-seconds warning.
+  the questions; a short instruction replaces the setup summary and tip panels.
+  The timer starts only when the group chooses to begin.
+- **Countdown / Timer** - the original stopwatch layout leads with 3-2-1 and
+  then a Persian MM:SS display. A small pause/resume control sits by the clock;
+  the finish action stays at the bottom beside the spy artwork. Extra minutes
+  and question ideas are folded under “زمان و راهنما”; opening them compacts
+  the clock area and keeps the main action reachable. Red stopwatch artwork
+  and a status message mark the final ten seconds. Home confirmations pause
+  time; cancelling restores the previous running or paused state.
 - **Final decision** - both time expiry and early completion leave secrets
-  hidden while the group votes and hears the spy's final guess.
-- **End** - explicitly reveal the word and spies, inspect every role, and
-  start another round with the same settings and a fresh word.
+  hidden while the group votes and hears the spy's final guess. One short
+  instruction and one reveal action keep this screen simple.
+- **End** - the portrait, spies, and word lead the screen. The category and a
+  scrollable, keyboard-accessible role list are available on demand. One bottom
+  action starts another round with the same settings and a fresh word.
 
 ## Player experience review (2026-10-03)
 
@@ -76,7 +84,7 @@ the group, followed by replay variety and reading comfort.
 | High | The last card automatically started the countdown; players had no pause control. | An untimed ready screen, explicit start, pause/resume, optional extensions, and safe early completion. [Xbox's guidance on UI time limits](https://learn.microsoft.com/en-us/xbox/accessibility/xbox-accessibility-guidelines/116) supports time to read setup instructions; its exemption for core gameplay timers is respected. |
 | Medium | Only 19 words were drawn with replacement. | 100 familiar Persian words in five categories; no repeats within the selected pool during a session, and no immediate repeat when the pool resets. With the original uniform draw, the calculated chance of at least one repeat in five rounds was about 44%. |
 | Medium | The guide explained goals but left the first question and transition to discussion vague. | A random starting player, practical question examples, and a concise guide matching the actual screens. [Undercover's own rules](https://www.yanstarstudio.com/undercover-how-to-play) offer a useful comparison for private cards and a designated first speaker; its different roles and elimination system were not adopted. |
-| Medium | Small steppers, identical accessible names, weak amber-button contrast, and a visually busy background made interaction harder. | 44px controls, contextual labels, valid selection ranges, visible keyboard focus, subdued backgrounds during play, and dark primary-button text. Contrast improved from 2.01:1 to 8.21:1. See [W3C contrast guidance](https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum.html) and the [44px enhanced target-size guidance](https://www.w3.org/WAI/WCAG22/Understanding/target-size-enhanced.html). This is a design target, not a claim of full WCAG conformance. |
+| Medium | Small steppers, identical accessible names, weak amber-button contrast, and a visually busy background made interaction harder. | 44px controls, contextual labels, valid selection ranges, visible keyboard focus, solid card and option surfaces, and dark primary-button text. Contrast improved from 2.01:1 to 8.21:1. See [W3C contrast guidance](https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum.html) and the [44px enhanced target-size guidance](https://www.w3.org/WAI/WCAG22/Understanding/target-size-enhanced.html). This is a design target, not a claim of full WCAG conformance. |
 | Medium | Settings reset on reload; countdown updates ran every animation frame and were continuously announced. | Validated preference storage, a deadline-based clock, updates at most four times per second, and announcements for meaningful status changes instead of every tick. |
 
 Browser timing decisions are grounded in [MDN's Page Visibility documentation](https://developer.mozilla.org/en-US/docs/Web/API/Page_Visibility_API):
@@ -92,16 +100,20 @@ without blocking play.
 ### Verification and limits
 
 `npm test` builds the production app and starts an isolated preview on
-`127.0.0.1:5191`. The 20 tests cover supported role counts, two complete word-pool
+`127.0.0.1:5191`. The 22 tests cover supported role counts, two complete word-pool
 cycles, category switching, corrupt/denied storage, rapid taps, private
 handoffs, keyboard navigation, dialog cancellation/focus, pause/resume,
 extensions, delayed timer callbacks, timeout and early-end privacy, rematches,
-guide access during a private handoff, citizen and spy cards, denied wake locks,
-and unchanged animation behavior under both system motion preferences. Axe
-checks the major screens and a confirmation dialog after card entrances finish.
+guide access during a private handoff, citizen and spy cards, home-confirmation
+timing, denied wake locks, and unchanged animation behavior under both system
+motion preferences. Axe checks the major screens, expanded tools, role lists,
+and a confirmation dialog after card entrances finish.
 Screenshots are generated for 320×568, 360×740, 363×692 (the supplied reference
 size), 390×844, 740×360, and 1280×800; layout checks include horizontal overflow,
-reachable start and handoff controls, artwork placement, and card-text clipping.
+reachable start, handoff, and gameplay actions, artwork placement, and card-text
+clipping. Gameplay captures include all three countdown digits, the initial
+timer, 03:20, the last-ten-seconds warning, final decision, result, and expanded
+tools. Shared gameplay framing lives in `src/components/GameplayScreen.tsx`.
 
 Secrets and word history stay in memory. Reloading resets a live round and
 its word history; only preferences persist. Voting and victory decisions are

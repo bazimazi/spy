@@ -58,6 +58,14 @@ export function HomeIcon(props: IconProps) {
   )
 }
 
+export function PauseIcon(props: IconProps) {
+  return <svg {...baseProps} {...props}><path d="M8 5v14M16 5v14" strokeWidth={3} /></svg>
+}
+
+export function PlayIcon(props: IconProps) {
+  return <svg {...baseProps} {...props}><path d="m8 5 11 7-11 7z" fill="currentColor" stroke="none" /></svg>
+}
+
 export function PlayersIcon(props: ImageIconProps) {
   return <ImageIcon src={playersSrc} {...props} />
 }

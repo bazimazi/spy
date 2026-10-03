@@ -1,5 +1,4 @@
-import { Screen } from '../components/Screen'
-import { RoundExitButton } from '../components/RoundExitButton'
+import { GameplayScreen } from '../components/GameplayScreen'
 import { toFa } from '../game/logic'
 import type { GameConfig, RoundState } from '../game/types'
 import watchSrc from '../assets/watch.png'
@@ -7,19 +6,14 @@ import watchSrc from '../assets/watch.png'
 export function ReadyScreen({ config, round, roundNumber, onStart, onHome }: {
   config: GameConfig; round: RoundState; roundNumber: number; onStart: () => void; onHome: () => void
 }) {
-  return <Screen topActions={<RoundExitButton onExit={onHome} />}>
-    <div className="center-block ready-content">
+  return <GameplayScreen className="ready-screen" onHome={onHome}>
+    <div className="play-focus">
       <img src={watchSrc} className="stopwatch" alt="" aria-hidden />
-      <p className="eyebrow">دور {toFa(roundNumber)} · همه کارت‌ها پخش شد</p>
-      <h1 className="title" tabIndex={-1} data-screen-title>همه آماده‌اید؟</h1>
-      <p className="subtitle text-center">گوشی رو وسط جمع بذارید. تا شروع رو نزنید، زمان کم نمی‌شه.</p>
-      <div className="round-summary">{toFa(config.playerCount)} بازیکن · {toFa(config.spyCount)} جاسوس · {toFa(config.minutes)} دقیقه</div>
-      <div className="tip-panel">
-        <h2>بازیکن {toFa(round.startingPlayerIndex + 1)}، سؤال اول با تو!</h2>
-        <p>از یک نفر بپرس: «معمولاً چه وقت‌هایی باهاش سر و کار داری؟»</p>
-        <p>جواب کوتاه بدهید و خود کلمه رو نگویید. بعد، کسی که جواب داده سؤال بعدی رو بپرسه.</p>
-      </div>
+      <h1 className="title play-heading" tabIndex={-1} data-screen-title>همه آماده‌اید؟</h1>
+      <p className="play-instruction">بازیکن {toFa(round.startingPlayerIndex + 1)}، سؤال اول با تو!</p>
+      <p className="play-note">گوشی رو وسط جمع بذارید و هر وقت آماده بودید شروع کنید.</p>
+      <p className="play-meta">دور {toFa(roundNumber)} · {toFa(config.minutes)} دقیقه</p>
     </div>
     <div className="footer-actions"><button type="button" className="btn" onClick={onStart}>شروع گفت‌وگو</button></div>
-  </Screen>
+  </GameplayScreen>
 }

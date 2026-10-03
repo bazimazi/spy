@@ -1,5 +1,4 @@
-import { Screen } from '../components/Screen'
-import { HomeIcon } from '../components/Icons'
+import { GameplayScreen } from '../components/GameplayScreen'
 import { toFa } from '../game/logic'
 import type { GameConfig, RoundState } from '../game/types'
 import spyHeroSrc from '../assets/logo.png'
@@ -17,31 +16,24 @@ export function EndScreen({ config, round, roundNumber, onPlayAgain, onHome }: E
   const spyLabel = spyNames.length > 1 ? 'جاسوس‌ها' : 'جاسوس'
 
   return (
-    <Screen
-      topActions={
-        <button type="button" className="icon-btn" aria-label="خانه" onClick={onHome}>
-          <HomeIcon />
-        </button>
-      }
-    >
-      <div className="center-block">
-        <p className="eyebrow">راز این دور باز شد</p>
-        <h1 className="title" tabIndex={-1} data-screen-title>پایان دور {toFa(roundNumber)}</h1>
+    <GameplayScreen className="end-screen" onHome={onHome} roundComplete>
+      <h1 className="visually-hidden" tabIndex={-1} data-screen-title>پایان دور {toFa(roundNumber)}</h1>
+      <div className="play-focus">
         <img src={spyHeroSrc} alt="" className="end-hero" aria-hidden="true" />
 
-        <p className="end-reveal">
-          {spyLabel}:{' '}
-          <strong className="end-reveal__value">{spyNames.join('، ')}</strong>
-        </p>
-
-        <p className="end-reveal">
-          کلمه: <strong className="end-reveal__value">{round.word.word}</strong>
-        </p>
-
-        <p className="end-reveal end-reveal--muted">موضوع: {round.word.category}</p>
+        <div className="end-results">
+          <p className="end-reveal">
+            {spyLabel}:{' '}
+            <strong className="end-reveal__value">{spyNames.join('، ')}</strong>
+          </p>
+          <p className="end-reveal">
+            کلمه: <strong className="end-reveal__value">{round.word.word}</strong>
+          </p>
+        </div>
         <details className="all-roles">
           <summary>نقش همه‌ی بازیکن‌ها</summary>
-          <ul className="role-list">
+          <p className="play-meta">موضوع: {round.word.category}</p>
+          <ul className="role-list" tabIndex={0} aria-label="نقش همه‌ی بازیکن‌ها">
             {Array.from({ length: config.playerCount }, (_, index) => {
               const isSpy = round.spyIndices.includes(index)
               return <li key={index} className={`role-row ${isSpy ? 'is-spy' : ''}`}>
@@ -54,11 +46,10 @@ export function EndScreen({ config, round, roundNumber, onPlayAgain, onHome }: E
       </div>
 
       <div className="footer-actions">
-        <p className="privacy-note">همون جمع، همون تنظیمات؛ با یک کلمه‌ی تازه.</p>
         <button type="button" className="btn" onClick={onPlayAgain}>
           دوباره بزن بریم!
         </button>
       </div>
-    </Screen>
+    </GameplayScreen>
   )
 }

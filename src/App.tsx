@@ -67,9 +67,9 @@ export default function App() {
   if (screen === 'ready' && round) return <ReadyScreen config={config} round={round}
     roundNumber={roundNumber} onStart={() => setScreen('countdown')} onHome={goHome} />
 
-  if (screen === 'countdown') return <CountdownScreen onFinish={startTimer} />
+  if (screen === 'countdown') return <CountdownScreen onFinish={startTimer} onHome={goHome} />
 
-  if (screen === 'timer') return <TimerScreen totalSeconds={config.minutes * 60} onFinish={finishDiscussion} />
+  if (screen === 'timer') return <TimerScreen totalSeconds={config.minutes * 60} onFinish={finishDiscussion} onHome={goHome} />
 
   if (screen === 'resolution') return <ResolutionScreen timedOut={timedOut}
     onReveal={() => setScreen('end')} onHome={goHome} />
