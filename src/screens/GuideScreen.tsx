@@ -1,5 +1,6 @@
 import { Screen } from '../components/Screen'
 import { ChevronRightIcon } from '../components/Icons'
+import { useBackButton } from '../platform/native'
 
 interface GuideScreenProps {
   onClose: () => void
@@ -33,6 +34,7 @@ const sections = [
 ]
 
 export function GuideScreen({ onClose }: GuideScreenProps) {
+  useBackButton(onClose)
   return (
     <Screen
       topActions={

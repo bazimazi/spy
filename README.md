@@ -8,6 +8,8 @@ A Persian, pass-the-phone implementation of the Spy party game, modeled on the
 - Vite + React 19 + TypeScript
 - CSS, inline SVG, and imported artwork; no UI framework or runtime game service.
 - Playwright browser tests and axe accessibility checks.
+- Installable offline PWA (`vite-plugin-pwa`) with a self-hosted Vazirmatn font.
+- Capacitor 8 shells for Android and iOS built from the same web bundle.
 
 ## Scripts
 
@@ -19,7 +21,44 @@ npm run preview  # preview the build
 npx playwright install chromium  # one-time browser setup for tests
 npm test         # builds and tests the production app
 npm run test:ui  # interactive test runner
+npm run cap:sync # build and copy the web bundle into android/ and ios/
+npm run android  # sync, then open Android Studio
+npm run ios      # sync, then open Xcode (macOS only)
+npm run native:assets  # regenerate native icons and splash screens from assets/
 ```
+
+## Platforms
+
+The same `dist/` build runs on every platform. `Capacitor.isNativePlatform()`
+(exposed as `isNative` in `src/platform/native.ts`) selects the few behaviors
+that differ.
+
+| | Web / installed PWA | Android and iOS apps (Capacitor) |
+|---|---|---|
+| Offline | Service worker precaches the app, artwork, and fonts | Files are bundled in the app |
+| Keep screen on during the timer | Screen Wake Lock API | `@capacitor-community/keep-awake` |
+| Back | Browser history (unused) | Android back closes the guide or dialog, asks before cancelling a round, and leaves the app from home |
+| Status bar | `theme-color`, `black-translucent` on iOS | Light icons on the dark background |
+
+- **PWA updates** use a waiting service worker that never reloads a running
+  round. A new version takes over the next time the app is opened after
+  every window has been closed.
+- **Logo and icons.** `src/assets/logo.svg` is the spy badge: the
+  `spy-hero.svg` head cropped into the orange circle. `public/favicon.svg` is
+  the same badge on a square canvas and the source for the favicon and PWA
+  icons (`pwa-assets.config.ts`, generated at build time). The native sources
+  in `assets/` (`icon-only.png`, `icon-foreground.png`, `icon-background.png`,
+  `splash.png`, `splash-dark.png`) are renders of the badge on the app
+  background; after replacing them, run `npm run native:assets` and commit
+  the generated files.
+- **Native projects.** `android/` and `ios/` are committed. Change native
+  settings there (app label `جاسوس`, portrait orientation), and keep app-wide
+  options in `capacitor.config.ts`. Run `npm run cap:sync` after every web
+  change and after adding a Capacitor plugin.
+- **Android** builds need Android Studio (JDK 21 and the Android SDK).
+  **iOS** builds need macOS with Xcode; plugins are resolved with Swift Package
+  Manager, so CocoaPods is not required.
+- The app id `com.bazimazi.spy` becomes permanent once published to a store.
 
 ## Animation policy
 
@@ -126,7 +165,7 @@ The next useful research is three Persian-speaking groups (new and experienced
 players, 3-8 people), playing several rounds each. Record setup time, requests
 for explanation, accidental reveals, pauses, unclear questions, perceived
 fairness/enjoyment, and voluntary rematches. Use that evidence to prioritize
-optional player names, difficulty-tuned word sets, offline installation, or
+optional player names, difficulty-tuned word sets, or
 audio/haptic feedback. Large groups are technically supported; their pacing
 has not been validated with players.
 
@@ -137,5 +176,8 @@ src/
   App.tsx            // top-level state machine
   components/        // shared UI (Screen frame + icons)
   game/              // pure game logic and Persian helpers
+  platform/          // native shell setup and Android back handling
   screens/           // one component per screen
+assets/              // source images for native icons and splash screens
+android/, ios/       // Capacitor native projects
 ```

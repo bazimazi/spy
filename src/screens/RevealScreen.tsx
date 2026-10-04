@@ -6,7 +6,7 @@ import { GuideScreen } from './GuideScreen'
 import { toFa } from '../game/logic'
 import type { GameConfig, RoundState } from '../game/types'
 import spyCardSrc from '../assets/spy-card.svg'
-import spyFaceSrc from '../assets/logo.png'
+import spyFaceSrc from '../assets/logo.svg'
 
 interface RevealScreenProps {
   config: GameConfig

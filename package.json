@@ -1,7 +1,7 @@
 {
   "name": "v2",
   "private": true,
-  "version": "0.0.0",
+  "version": "0.1.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -9,19 +9,32 @@
     "preview": "vite preview",
     "test": "playwright test",
     "test:serve": "npm run build && vite preview --host 127.0.0.1 --port 5191 --strictPort",
-    "test:ui": "playwright test --ui"
+    "test:ui": "playwright test --ui",
+    "cap:sync": "npm run build && cap sync",
+    "android": "npm run cap:sync && cap open android",
+    "ios": "npm run cap:sync && cap open ios",
+    "native:assets": "npx @capacitor/assets@3.0.5 generate --android --ios --iconBackgroundColor \"#4C3A51\" --iconBackgroundColorDark \"#4C3A51\" --splashBackgroundColor \"#4C3A51\" --splashBackgroundColorDark \"#4C3A51\""
   },
   "dependencies": {
+    "@capacitor-community/keep-awake": "^8.0.1",
+    "@capacitor/android": "^8.5.2",
+    "@capacitor/app": "^8.1.2",
+    "@capacitor/core": "^8.5.2",
+    "@capacitor/ios": "^8.5.2",
+    "@fontsource/vazirmatn": "^5.3.0",
     "react": "^19.1.0",
     "react-dom": "^19.1.0"
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.13.0",
+    "@capacitor/cli": "^8.5.2",
     "@playwright/test": "^1.63.0",
     "@types/react": "^19.1.0",
     "@types/react-dom": "^19.1.0",
+    "@vite-pwa/assets-generator": "^2.0.0",
     "@vitejs/plugin-react": "^4.3.4",
     "typescript": "~5.7.3",
-    "vite": "^6.0.7"
+    "vite": "^6.0.7",
+    "vite-plugin-pwa": "^2.0.0"
   }
 }

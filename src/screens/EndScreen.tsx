@@ -1,7 +1,7 @@
 import { GameplayScreen } from '../components/GameplayScreen'
 import { toFa } from '../game/logic'
 import type { GameConfig, RoundState } from '../game/types'
-import spyHeroSrc from '../assets/logo.png'
+import spyHeroSrc from '../assets/logo.svg'
 
 interface EndScreenProps {
   config: GameConfig

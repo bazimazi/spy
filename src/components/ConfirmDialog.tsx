@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react'
+import { useBackButton } from '../platform/native'
 
 interface ConfirmDialogProps {
   title: string
@@ -11,6 +12,7 @@ interface ConfirmDialogProps {
 export function ConfirmDialog({ title, description, confirmLabel, onConfirm, onCancel }: ConfirmDialogProps) {
   const ref = useRef<HTMLDialogElement>(null)
   const returnFocus = useRef(document.activeElement as HTMLElement | null)
+  useBackButton(onCancel)
   useEffect(() => {
     const dialog = ref.current!
     dialog.showModal()

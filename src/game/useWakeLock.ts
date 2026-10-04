@@ -1,9 +1,17 @@
 import { useEffect } from 'react'
+import { KeepAwake } from '@capacitor-community/keep-awake'
+import { isNative } from '../platform/native'
 
 /** Optional enhancement. Unsupported/denied wake locks never block a round. */
 export function useWakeLock(enabled: boolean) {
   useEffect(() => {
-    if (!enabled || !('wakeLock' in navigator)) return
+    if (!enabled) return
+    if (isNative) {
+      // WebView wake locks are unreliable; the native flag also survives backgrounding.
+      void KeepAwake.keepAwake().catch(() => {})
+      return () => { void KeepAwake.allowSleep().catch(() => {}) }
+    }
+    if (!('wakeLock' in navigator)) return
     let cancelled = false
     let lock: WakeLockSentinel | null = null
     let requesting = false
