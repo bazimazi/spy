@@ -94,7 +94,10 @@ export function RevealScreen({ config, round, playerIndex, onNext, onHome }: Rev
       <h1 className="visually-hidden" tabIndex={-1} data-screen-title>نوبت {name}</h1>
       <div ref={cardArea} className="reveal-deck">
         <Card key={revealed ? 'front' : 'back'} variant={revealed ? 'front' : 'back'}
-          layers={Math.min(3, remaining - (phase === 'leaving' ? 2 : 1))}
+          // Every card still in the deck is drawn, foreground included, so a
+          // deck of up to MAX_DECK_LAYERS + 1 players shows its exact size.
+          depth={config.playerCount - 1}
+          layers={remaining - (phase === 'leaving' ? 2 : 1)}
           className={phase === 'flipping' ? 'is-flipping-out' : phase === 'leaving' ? 'is-dealing-out' : undefined}
           onClick={phase === 'back' ? () => setPhase('flipping') : undefined}
           cue="flip" onAnimationEnd={onCardAnimationEnd}

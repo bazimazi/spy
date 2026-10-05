@@ -218,6 +218,45 @@ test('a round can be cancelled safely with keyboard-accessible confirmation', as
   await expect(page.getByRole('heading', { name: 'جاسوس', exact: true })).toBeFocused()
 })
 
+test('browser back closes screens and dialogs, asks before cancelling, and leaves from home', async ({ page }) => {
+  await prepare(page)
+  const home = page.getByRole('heading', { name: 'جاسوس', exact: true })
+  await page.getByRole('button', { name: 'راهنمای بازی' }).click()
+  await expect(home).toHaveCount(0)
+  await page.goBack()
+  await expect(home).toBeFocused()
+
+  await page.getByRole('button', { name: 'بزن بریم!', exact: true }).click()
+  await page.getByRole('button', { name: 'دیدن کارت بازیکن ۱' }).click()
+  await expect(page.locator('.secret-word')).toHaveCount(1)
+  await page.goBack()
+  await expect(page.getByRole('dialog')).toBeVisible()
+  await expect(page.locator('.secret-word')).toHaveCount(0)
+  await page.goBack()
+  await expect(page.getByRole('dialog')).toHaveCount(0)
+  await expect(page.getByRole('button', { name: 'دیدن کارت بازیکن ۱' })).toBeVisible()
+  await page.goBack()
+  await page.getByRole('button', { name: 'لغو دور و رفتن به خانه' }).click()
+  await expect(home).toBeFocused()
+
+  await page.goBack()
+  await expect(page).toHaveURL('about:blank')
+})
+
+test('back folds the timer tools before offering to cancel the round', async ({ page }) => {
+  await startTimer(page)
+  await page.getByText('زمان و راهنما').click()
+  await expect(page.locator('.timer-tools')).toHaveAttribute('open', '')
+  await page.goBack()
+  await expect(page.locator('.timer-tools')).not.toHaveAttribute('open', '')
+  await expect(page.getByRole('dialog')).toHaveCount(0)
+  await page.goBack()
+  await expect(page.getByRole('dialog')).toBeVisible()
+  await page.goBack()
+  await expect(page.getByRole('dialog')).toHaveCount(0)
+  await expect(page.getByRole('timer')).toHaveText('۰۱:۰۰')
+})
+
 test('pause, extension, resume, and cancelling an early finish preserve exact time', async ({ page }) => {
   await startTimer(page)
   await page.clock.runFor(1_000)

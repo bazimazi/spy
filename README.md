@@ -37,8 +37,13 @@ that differ.
 |---|---|---|
 | Offline | Service worker precaches the app, artwork, and fonts | Files are bundled in the app |
 | Keep screen on during the timer | Screen Wake Lock API | `@capacitor-community/keep-awake` |
-| Back | Browser history (unused) | Android back closes the guide or dialog, asks before cancelling a round, and leaves the app from home |
+| Back | Browser or system back, through a same-page history entry kept while a screen handles back | Android back button and gesture |
 | Status bar | `theme-color`, `black-translucent` on iOS | Light icons on the dark background |
+
+Back behaves the same everywhere: it closes the open dialog, the timer's tools
+panel, the guide, or the player names; during a round it asks before cancelling;
+on the result screen it returns home; and from home it leaves the app. Screens
+register their back action with `useBackButton` in `src/platform/native.ts`.
 
 - **PWA updates** use a waiting service worker that never reloads a running
   round. A new version takes over the next time the app is opened after
@@ -92,8 +97,9 @@ the reveal and leaves the result to the group, as in earlier versions.
   number and a faint spy illustration on the back, a centered word or spy
   portrait on the front, and an explicit hide-and-pass action inside the card.
   A tap turns the card over in 3D; hiding removes the secret at once and deals
-  the concealed card off the deck toward the next player, and the deck thins as
-  the last cards go out. Progress dots (or a bar above 12 players) stay below
+  the concealed card off the deck toward the next player. The deck shows one
+  evenly spaced card per player still waiting (exact up to 9 players, capped at
+  9 cards above that) and thins from the back as cards go out. Progress dots (or a bar above 12 players) stay below
   the deck. Spy and citizen faces share every animation, sound, and vibration
   so nothing but the card's content can reveal a role across the table. The guide can be opened without losing the
   current player; opening it or hiding the page conceals revealed cards.
@@ -221,7 +227,7 @@ src/
   App.tsx            // top-level state machine
   components/        // shared UI (Screen frame + icons)
   game/              // pure game logic, scoring, feedback, and Persian helpers
-  platform/          // native shell setup and Android back handling
+  platform/          // native shell setup and back handling
   screens/           // one component per screen
 assets/              // source images for native icons and splash screens
 android/, ios/       // Capacitor native projects

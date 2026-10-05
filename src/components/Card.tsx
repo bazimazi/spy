@@ -1,4 +1,7 @@
-import type { AnimationEvent, PropsWithChildren } from 'react'
+import type { AnimationEvent, CSSProperties, PropsWithChildren } from 'react'
+
+/** Most deck layers drawn behind the foreground card; deeper decks are capped. */
+export const MAX_DECK_LAYERS = 8
 
 interface CardProps {
   /** When true the card uses the lighter front outline (`#C1BBC5`). */
@@ -7,8 +10,10 @@ interface CardProps {
   /** Extra class names for the foreground card (used to drive animations). */
   className?: string
   label?: string
-  /** Deck layers still waiting behind the foreground card (0-3). */
+  /** Deck layers still waiting behind the foreground card (0-`depth`). */
   layers?: number
+  /** Layer count the deck is spaced for; stays fixed while the deck thins. */
+  depth?: number
   /** Sound and haptic cue for a tap on an interactive card. */
   cue?: string
   /** Fires when a CSS animation on the foreground card ends. */
@@ -16,15 +21,11 @@ interface CardProps {
 }
 
 /**
- * Visual card container matching the "deck of three" look from Figma:
- * three offset rectangles painted behind a foreground card. The deck thins
- * out as the last cards are dealt.
- *
- * Coordinates come straight from the Figma frames (`Group 7` group):
- *   Rectangle 5 → (46, 30)   ← deepest card
- *   Rectangle 6 → (28, 20)
- *   Rectangle 4 → (10, 10)
- *   Foreground  → (0, 0)
+ * Visual card container based on the Figma deck (`Group 7` group): offset
+ * rectangles painted behind a foreground card. The deepest possible layer
+ * sits at the Figma offset (46, 30) and the others are spaced evenly between
+ * it and the foreground at (0, 0). Spacing depends on `depth`, so layers keep
+ * their places while the deck thins out from the back as cards are dealt.
  */
 export function Card({
   variant = 'front',
@@ -32,17 +33,21 @@ export function Card({
   className,
   label,
   layers = 3,
+  depth = 3,
   cue,
   onAnimationEnd,
   children,
 }: PropsWithChildren<CardProps>) {
   const isInteractive = typeof onClick === 'function'
   const Element = isInteractive ? 'button' : 'div'
+  const deckDepth = Math.max(1, Math.min(MAX_DECK_LAYERS, depth))
+  const layerCount = Math.max(0, Math.min(deckDepth, layers))
 
   return (
-    <div className="card-stack">
-      {[3, 2, 1].filter((layer) => layer <= layers).map((layer) => (
-        <span key={layer} className={`card-stack__layer card-stack__layer--${layer}`} aria-hidden />
+    <div className="card-stack" style={{ '--deck-depth': deckDepth } as CSSProperties}>
+      {/* Deepest layer first so each shallower layer paints over it. */}
+      {Array.from({ length: layerCount }, (_, index) => layerCount - index).map((layer) => (
+        <span key={layer} className="card-stack__layer" style={{ '--layer': layer } as CSSProperties} aria-hidden />
       ))}
       <Element
         type={isInteractive ? 'button' : undefined}

@@ -233,17 +233,13 @@ button:disabled {
     'Twemoji Mozilla', sans-serif;
 }
 
-/* Raster icons exported from Figma. Pixel-art assets, so disable smoothing
-   to keep the crisp blocky edges seen in the source frame. */
-.img-icon {
+/* Vector settings icons - solid glyphs tinted with the brand color so they
+   stay sharp at every size and pixel density. */
+.setting-icon {
   width: 24px;
   height: 24px;
   flex-shrink: 0;
-  object-fit: contain;
-  image-rendering: pixelated;
-  image-rendering: -moz-crisp-edges;
-  image-rendering: crisp-edges;
-  user-select: none;
+  color: var(--c-primary);
 }
 
 .setting-row__value {
@@ -332,26 +328,14 @@ button:disabled {
   border-radius: 12px;
 }
 
+/* Layers step evenly from the foreground (0, 0) to the Figma deepest offset
+   (46, 30); `--deck-depth` layers fill that span. The hard edge shadow keeps
+   neighbouring borders apart when a deep deck packs them closely. */
 .card-stack__layer {
   pointer-events: none;
-}
-
-/* Layer 3 - deepest, painted first. Figma offset: (46, 30). */
-.card-stack__layer--3 {
-  top: calc(30 / 508 * 100%);
-  left: calc(46 / 366 * 100%);
-}
-
-/* Layer 2 - middle. Figma offset: (28, 20). */
-.card-stack__layer--2 {
-  top: calc(20 / 508 * 100%);
-  left: calc(28 / 366 * 100%);
-}
-
-/* Layer 1 - just behind the foreground. Figma offset: (10, 10). */
-.card-stack__layer--1 {
-  top: calc(10 / 508 * 100%);
-  left: calc(10 / 366 * 100%);
+  top: calc(30 / 508 * 100% * var(--layer) / var(--deck-depth));
+  left: calc(46 / 366 * 100% * var(--layer) / var(--deck-depth));
+  box-shadow: 1.5px 1.5px 0 rgba(0, 0, 0, 0.45);
 }
 
 /* Foreground card - anchored top-left like the Figma `Group 10`. */
@@ -528,7 +512,8 @@ button:disabled {
 @keyframes card-rise-in {
   0% {
     opacity: 0.4;
-    transform: translate(3.125%, 2.1%) scale(0.98);
+    /* Starts on the first deck layer: its offset relative to the 320×478 card. */
+    transform: translate(calc(46 / 320 * 100% / var(--deck-depth, 3)), calc(30 / 478 * 100% / var(--deck-depth, 3))) scale(0.98);
   }
   100% {
     opacity: 1;
@@ -821,7 +806,7 @@ button:focus-visible, select:focus-visible, summary:focus-visible, .role-list:fo
   font-size: 14px;
 }
 
-.home-screen .img-icon {
+.home-screen .setting-icon {
   width: 28px;
   height: 28px;
 }
@@ -1090,14 +1075,24 @@ summary { cursor: pointer; min-height: 44px; display: list-item; padding: 8px 0;
   align-items: flex-end;
   min-height: clamp(64px, 14dvh, 96px);
 }
+/* The spy sneaks from right to left as the round's time runs out. */
 .play-spy {
+  --spy-width: clamp(68px, 14dvh, 100px);
   position: absolute;
-  right: 0;
+  right: calc(var(--spy-elapsed, 0) * (100% - var(--spy-width)));
   bottom: 0;
-  width: clamp(68px, 14dvh, 100px);
+  width: var(--spy-width);
   height: auto;
   pointer-events: none;
   user-select: none;
+  transition: right 1s linear;
+}
+.timer-screen:not(.is-paused) .play-spy { animation: spy-walk 700ms ease-in-out infinite; }
+@keyframes spy-walk {
+  0%, 100% { translate: 0 0; rotate: 0deg; }
+  25% { translate: 0 -3px; rotate: -2deg; }
+  50% { translate: 0 0; rotate: 0deg; }
+  75% { translate: 0 -3px; rotate: 2deg; }
 }
 .timer-tools { position: relative; z-index: 1; width: 100%; }
 .timer-tools > summary { width: fit-content; margin-right: auto; padding: 10px 4px; font-size: 12px; color: var(--c-text-muted); }
