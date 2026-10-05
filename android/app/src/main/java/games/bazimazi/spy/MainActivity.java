@@ -1,4 +1,4 @@
-package com.bazimazi.spy;
+package games.bazimazi.spy;
 
 import com.getcapacitor.BridgeActivity;
 

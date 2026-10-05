@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test'
-import { createRound, formatTime, validateConfig } from '../src/game/logic'
+import { addRoundScore, createRound, emptyScore, formatTime, guessOptions, playerName, resolveRound, scoreRound, validateConfig } from '../src/game/logic'
 import { DEFAULT_CONFIG } from '../src/game/preferences'
 import { CATEGORIES, getWordPool, VOCAB } from '../src/game/words'
 
@@ -70,4 +70,56 @@ test('timer formatting has Persian digits and clamps negative values', () => {
   expect(formatTime(60)).toBe('۰۱:۰۰')
   expect(formatTime(9)).toBe('۰۰:۰۹')
   expect(formatTime(-2)).toBe('۰۰:۰۰')
+})
+
+test('a reset pool avoids its last word even after other categories were played', () => {
+  const food = getWordPool('غذا').map((entry) => entry.word)
+  const place = getWordPool('مکان')[0]!.word
+  for (let attempt = 0; attempt < 200; attempt++) {
+    const round = createRound({ ...DEFAULT_CONFIG, category: 'غذا' }, [...food, place])
+    expect(round.word.word).not.toBe(food.at(-1))
+    expect(round.wordHistory).toContain(place)
+  }
+})
+
+test('the spy guess offers the word among distinct decoys from its own category', () => {
+  for (const entry of VOCAB) {
+    const options = guessOptions(entry)
+    expect(options).toHaveLength(8)
+    expect(new Set(options).size).toBe(8)
+    expect(options).toContain(entry.word)
+    const pool = getWordPool(entry.category).map((word) => word.word)
+    expect(options.every((option) => pool.includes(option))).toBe(true)
+  }
+})
+
+test('rounds resolve and score by accusation and guess', () => {
+  const round = { ...createRound({ ...DEFAULT_CONFIG, playerCount: 5, spyCount: 2 }), spyIndices: [1, 3] }
+  const word = round.word.word
+  const cases = [
+    { accused: [1, 3], guess: 'x', reason: 'caught', winner: 'citizens', points: [1, 0, 1, 0, 1] },
+    { accused: [3, 1], guess: word, reason: 'last-guess', winner: 'spies', points: [0, 2, 0, 2, 0] },
+    { accused: [1, 2], guess: undefined, reason: 'wrong-accusation', winner: 'spies', points: [0, 2, 0, 2, 0] },
+    { accused: [], guess: word, reason: 'early-guess', winner: 'spies', points: [0, 3, 0, 3, 0] },
+    { accused: [], guess: 'x', reason: 'early-miss', winner: 'citizens', points: [1, 0, 1, 0, 1] },
+  ] as const
+  let score = emptyScore(5)
+  for (const { accused, guess, reason, winner, points } of cases) {
+    const outcome = resolveRound(round, accused, guess)
+    expect(outcome).toMatchObject({ reason, winner })
+    expect(scoreRound(round, outcome, 5)).toEqual(points)
+    score = addRoundScore(score, scoreRound(round, outcome, 5), outcome.winner)
+  }
+  expect(score.points).toEqual([2, 7, 2, 7, 2])
+  expect(score.wins).toEqual({ citizens: 2, spies: 3 })
+  expect(score.lastDelta).toEqual([1, 0, 1, 0, 1])
+})
+
+test('player names fall back to seat numbers and invalid settings are rejected', () => {
+  expect(playerName(['سارا', '  '], 0)).toBe('سارا')
+  expect(playerName(['سارا', '  '], 1)).toBe('بازیکن ۲')
+  expect(playerName([], 9)).toBe('بازیکن ۱۰')
+  expect(validateConfig({ ...DEFAULT_CONFIG, names: ['x'.repeat(17)] })).not.toBeNull()
+  expect(validateConfig({ ...DEFAULT_CONFIG, names: [3 as unknown as string] })).not.toBeNull()
+  expect(validateConfig({ ...DEFAULT_CONFIG, sound: 'yes' as unknown as boolean })).not.toBeNull()
 })

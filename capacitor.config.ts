@@ -1,7 +1,7 @@
 import type { CapacitorConfig } from '@capacitor/cli'
 
 const config: CapacitorConfig = {
-  appId: 'com.bazimazi.spy',
+  appId: 'games.bazimazi.spy',
   appName: 'Spy',
   webDir: 'dist',
   backgroundColor: '#4C3A51',

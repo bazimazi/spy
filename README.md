@@ -58,7 +58,7 @@ that differ.
 - **Android** builds need Android Studio (JDK 21 and the Android SDK).
   **iOS** builds need macOS with Xcode; plugins are resolved with Swift Package
   Manager, so CocoaPods is not required.
-- The app id `com.bazimazi.spy` becomes permanent once published to a store.
+- The app id `games.bazimazi.spy` becomes permanent once published to a store.
 
 ## Animation policy
 
@@ -75,33 +75,74 @@ and transitions remain enabled. Future contributors should also follow
 
 ## Flow
 
-`Home → (optional) Guide → Reveal × N → Ready → Countdown 3-2-1 → Timer → Final decision → End`
+`Home → (optional) Guide / Names → Reveal × N → Ready → Countdown 3-2-1 → Timer → Vote → Verdict → (Spy's guess) → End`
+
+A spy can also stop the timer to guess early: `Timer → Spy's guess → End`.
+The vote can be skipped with “نمایش کلمه و نقش‌ها”, which goes straight to
+the reveal and leaves the result to the group, as in earlier versions.
 
 - **Home** - choose 3-30 players, 1-8 spies (fewer than players), 1-30 minutes,
   a word category, and the optional spy hint. The three main settings use
-  dropdowns matching the original design; category and hint controls are under
-  “تنظیمات بیشتر”. Valid preferences survive reloads.
+  dropdowns matching the original design; category, hint, player names, and
+  vibration are under “تنظیمات بیشتر”, and sound is a top-corner toggle.
+  Valid preferences survive reloads.
+- **Names** - optional names by seat (16 characters). Blank seats stay
+  «بازیکن N». Names appear on cards, the vote, the verdict, and the scoreboard.
 - **Reveal** - a large layered deck follows the original card artboards: player
   number and a faint spy illustration on the back, a centered word or spy
   portrait on the front, and an explicit hide-and-pass action inside the card.
-  Progress stays below the deck. The guide can be opened without losing the
+  A tap turns the card over in 3D; hiding removes the secret at once and deals
+  the concealed card off the deck toward the next player, and the deck thins as
+  the last cards go out. Progress dots (or a bar above 12 players) stay below
+  the deck. Spy and citizen faces share every animation, sound, and vibration
+  so nothing but the card's content can reveal a role across the table. The guide can be opened without losing the
   current player; opening it or hiding the page conceals revealed cards.
-- **Ready** - everyone gets time to settle in. A randomly chosen player starts
-  the questions; a short instruction replaces the setup summary and tip panels.
+- **Ready** - everyone gets time to settle in. A slot-machine strip spins
+  through the names and lands on the randomly chosen first questioner.
   The timer starts only when the group chooses to begin.
 - **Countdown / Timer** - the original stopwatch layout leads with 3-2-1 and
   then a Persian MM:SS display. A small pause/resume control sits by the clock;
   the finish action stays at the bottom beside the spy artwork. Extra minutes
-  and question ideas are folded under “زمان و راهنما”; opening them compacts
+  and question ideas are folded under “زمان و راهنما”, along with the spy's
+  early-guess action; opening them compacts
   the clock area and keeps the main action reachable. Red stopwatch artwork
-  and a status message mark the final ten seconds. Home confirmations pause
-  time; cancelling restores the previous running or paused state.
-- **Final decision** - both time expiry and early completion leave secrets
-  hidden while the group votes and hears the spy's final guess. One short
-  instruction and one reveal action keep this screen simple.
-- **End** - the portrait, spies, and word lead the screen. The category and a
-  scrollable, keyboard-accessible role list are available on demand. One bottom
-  action starts another round with the same settings and a fresh word.
+  and a status message mark the final ten seconds, with a ticking sound, a red
+  pulsing vignette, and a fuse bar that burns down under the time. Home
+  confirmations pause time; cancelling restores the previous running or paused
+  state.
+- **Vote** - both time expiry and early completion leave secrets hidden. The
+  group agrees on as many suspects as there are spies; with a full ballot a new
+  pick replaces the oldest.
+- **Verdict** - a drumroll, then each suspect's card turns over and the result
+  is stamped. Accusing any citizen ends the round for the spies. Catching every
+  spy gives them a last chance to guess the word.
+- **Spy's guess** - the word among seven decoys from its own category.
+- **End** - a winner banner with confetti, the reason, the portrait, spies,
+  word, and the spy's guess. The team tally and a scrollable,
+  keyboard-accessible list of roles and points are available on demand. One
+  bottom action starts another round with the same settings and a fresh word.
+
+## Scoring
+
+| Result | Points |
+| --- | --- |
+| Every spy caught, last guess wrong | each citizen +1 |
+| A spy guessed early and missed | each citizen +1 |
+| A citizen was accused | each spy +2 |
+| Every spy caught, last guess right | each spy +2 |
+| A spy stopped the discussion and guessed right | each spy +3 |
+
+Points follow seats and accumulate for the session until the number of
+players changes. Rounds settled without the in-app vote are not scored.
+
+## Sound and haptics
+
+`src/game/feedback.ts` synthesizes every sound with Web Audio, so there are no
+audio files and nothing to download. Buttons get a tap cue automatically;
+`data-cue` on an element picks another cue and `data-cue="none"` leaves the cue
+to the screen. Vibration uses `@capacitor/haptics` in the native apps and
+`navigator.vibrate` where browsers support it; the setting is hidden where
+neither exists. Audio starts on the first touch, as browsers require.
 
 ## Player experience review (2026-10-03)
 
@@ -139,14 +180,16 @@ without blocking play.
 ### Verification and limits
 
 `npm test` builds the production app and starts an isolated preview on
-`127.0.0.1:5191`. The 22 tests cover supported role counts, two complete word-pool
+`127.0.0.1:5191`. The tests also cover the vote, verdict, last-chance and
+early guesses, scoring, player names, and sound/vibration settings. The
+original 22 tests cover supported role counts, two complete word-pool
 cycles, category switching, corrupt/denied storage, rapid taps, private
 handoffs, keyboard navigation, dialog cancellation/focus, pause/resume,
 extensions, delayed timer callbacks, timeout and early-end privacy, rematches,
 guide access during a private handoff, citizen and spy cards, home-confirmation
 timing, denied wake locks, and unchanged animation behavior under both system
 motion preferences. Axe checks the major screens, expanded tools, role lists,
-and a confirmation dialog after card entrances finish.
+and a confirmation dialog after all finite animations finish.
 Screenshots are generated for 320×568, 360×740, 363×692 (the supplied reference
 size), 390×844, 740×360, and 1280×800; layout checks include horizontal overflow,
 reachable start, handoff, and gameplay actions, artwork placement, and card-text
@@ -155,8 +198,9 @@ timer, 03:20, the last-ten-seconds warning, final decision, result, and expanded
 tools. Shared gameplay framing lives in `src/components/GameplayScreen.tsx`.
 
 Secrets and word history stay in memory. Reloading resets a live round and
-its word history; only preferences persist. Voting and victory decisions are
-handled by the group. Real iOS/Android screen-lock behavior, screen readers,
+its word history; only preferences (including names and sound settings)
+persist, and the session scoreboard stays in memory. The app records the
+group's agreed vote; how the group reaches it is up to them. Real iOS/Android screen-lock behavior, screen readers,
 and social balance still need device and group playtesting. Browsers may deny
 wake locks. Gameplay needs no server once loaded, but offline reload/install
 support is not implemented.
@@ -164,9 +208,10 @@ support is not implemented.
 The next useful research is three Persian-speaking groups (new and experienced
 players, 3-8 people), playing several rounds each. Record setup time, requests
 for explanation, accidental reveals, pauses, unclear questions, perceived
-fairness/enjoyment, and voluntary rematches. Use that evidence to prioritize
-optional player names, difficulty-tuned word sets, or
-audio/haptic feedback. Large groups are technically supported; their pacing
+fairness/enjoyment, and voluntary rematches. Also check whether the scoring
+values feel fair, whether groups use the early spy guess, and whether sound
+helps or distracts. Use that evidence to prioritize difficulty-tuned word sets
+and scoring changes. Large groups are technically supported; their pacing
 has not been validated with players.
 
 ## Project layout
@@ -175,7 +220,7 @@ has not been validated with players.
 src/
   App.tsx            // top-level state machine
   components/        // shared UI (Screen frame + icons)
-  game/              // pure game logic and Persian helpers
+  game/              // pure game logic, scoring, feedback, and Persian helpers
   platform/          // native shell setup and Android back handling
   screens/           // one component per screen
 assets/              // source images for native icons and splash screens

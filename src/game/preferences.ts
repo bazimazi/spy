@@ -7,6 +7,9 @@ export const DEFAULT_CONFIG: GameConfig = {
   minutes: 5,
   spyGuide: false,
   category: 'all',
+  names: [],
+  sound: true,
+  vibration: true,
 }
 
 export const PREFERENCES_KEY = 'spy.preferences.v1'
@@ -25,8 +28,10 @@ export function readPreferences(): GameConfig {
 export function savePreferences(config: GameConfig) {
   try {
     // Explicit allowlist: roles and secret words never go into browser storage.
-    const { playerCount, spyCount, minutes, spyGuide, category } = config
-    localStorage.setItem(PREFERENCES_KEY, JSON.stringify({ playerCount, spyCount, minutes, spyGuide, category }))
+    const { playerCount, spyCount, minutes, spyGuide, category, names, sound, vibration } = config
+    localStorage.setItem(PREFERENCES_KEY, JSON.stringify({
+      playerCount, spyCount, minutes, spyGuide, category, names, sound, vibration,
+    }))
   } catch {
     // Private browsing and denied storage must not interrupt a game.
   }

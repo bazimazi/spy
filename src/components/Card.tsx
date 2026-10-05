@@ -7,13 +7,18 @@ interface CardProps {
   /** Extra class names for the foreground card (used to drive animations). */
   className?: string
   label?: string
+  /** Deck layers still waiting behind the foreground card (0-3). */
+  layers?: number
+  /** Sound and haptic cue for a tap on an interactive card. */
+  cue?: string
   /** Fires when a CSS animation on the foreground card ends. */
   onAnimationEnd?: (event: AnimationEvent<HTMLElement>) => void
 }
 
 /**
  * Visual card container matching the "deck of three" look from Figma:
- * three offset rectangles painted behind a foreground card.
+ * three offset rectangles painted behind a foreground card. The deck thins
+ * out as the last cards are dealt.
  *
  * Coordinates come straight from the Figma frames (`Group 7` group):
  *   Rectangle 5 → (46, 30)   ← deepest card
@@ -26,6 +31,8 @@ export function Card({
   onClick,
   className,
   label,
+  layers = 3,
+  cue,
   onAnimationEnd,
   children,
 }: PropsWithChildren<CardProps>) {
@@ -33,14 +40,15 @@ export function Card({
   const Element = isInteractive ? 'button' : 'div'
 
   return (
-    <div className="card-stack" aria-hidden={false}>
-      <span className="card-stack__layer card-stack__layer--3" aria-hidden />
-      <span className="card-stack__layer card-stack__layer--2" aria-hidden />
-      <span className="card-stack__layer card-stack__layer--1" aria-hidden />
+    <div className="card-stack">
+      {[3, 2, 1].filter((layer) => layer <= layers).map((layer) => (
+        <span key={layer} className={`card-stack__layer card-stack__layer--${layer}`} aria-hidden />
+      ))}
       <Element
         type={isInteractive ? 'button' : undefined}
         onClick={onClick}
         aria-label={label}
+        data-cue={isInteractive ? cue : undefined}
         onAnimationEnd={onAnimationEnd}
         className={`card card--${variant}${isInteractive ? ' is-interactive' : ''}${
           className ? ` ${className}` : ''

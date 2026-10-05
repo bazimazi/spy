@@ -24,8 +24,23 @@ async function deal(page: Page, count = 3) {
   return roles
 }
 
+/** Waits for every finite animation (entrances, flips, deals) to finish. Several calm
+ *  polls in a row skip the gap between one animation ending and the next starting. */
+async function settle(page: Page) {
+  await page.evaluate(() => { (window as unknown as { calmPolls: number }).calmPolls = 0 })
+  await page.waitForFunction(() => {
+    const state = window as unknown as { calmPolls: number }
+    const busy = document.getAnimations().some((animation) =>
+      animation.playState === 'running' && animation.effect?.getComputedTiming().iterations !== Infinity)
+    state.calmPolls = busy ? 0 : state.calmPolls + 1
+    return state.calmPolls >= 4
+  }, undefined, { polling: 50 })
+}
+
 async function startTimer(page: Page) {
-  await page.clock.install()
+  // A paused clock only moves when a test advances it, so slow machines cannot drift.
+  await page.clock.install({ time: new Date('2026-10-03T12:00:00Z') })
+  await page.clock.pauseAt(new Date('2026-10-03T12:00:01Z'))
   await prepare(page)
   const roles = await deal(page)
   await page.getByRole('button', { name: 'شروع گفت‌وگو' }).click()
@@ -48,13 +63,13 @@ test('settings enforce boundaries, adjust spy count, and survive reloads', async
   await expect(page.getByLabel('زمان بازی (دقیقه)').locator('option')).toHaveCount(30)
   await page.getByText('تنظیمات بیشتر').click()
   await page.getByLabel('موضوع کلمه‌ها').selectOption('غذا')
-  await page.getByRole('switch').click()
+  await page.getByRole('switch', { name: /راهنما برای جاسوس/ }).click()
   await page.reload()
   await expect(page.locator('.home-options')).not.toHaveAttribute('open', '')
   await expect(page.locator('.home-options > summary')).toContainText('غذا · راهنمای جاسوس')
   await page.getByText('تنظیمات بیشتر').click()
   await expect(page.getByLabel('موضوع کلمه‌ها')).toHaveValue('غذا')
-  await expect(page.getByRole('switch')).toHaveAttribute('aria-checked', 'true')
+  await expect(page.getByRole('switch', { name: /راهنما برای جاسوس/ })).toHaveAttribute('aria-checked', 'true')
   await expect(page.getByLabel('تعداد بازیکن‌ها')).toHaveValue('3')
   await expect(page.getByLabel('زمان بازی (دقیقه)')).toHaveValue('30')
 })
@@ -134,7 +149,7 @@ test('reveal handoffs remove secrets immediately and never start the timer autom
   await expect(page.getByRole('heading', { name: 'همه آماده‌اید؟' })).toBeFocused()
   await expect(page.getByRole('timer')).toHaveCount(0)
   const stored = await page.evaluate((key) => JSON.parse(localStorage.getItem(key)!), PREFERENCES_KEY)
-  expect(Object.keys(stored).sort()).toEqual(['category', 'minutes', 'playerCount', 'spyCount', 'spyGuide'])
+  expect(Object.keys(stored).sort()).toEqual(['category', 'minutes', 'names', 'playerCount', 'sound', 'spyCount', 'spyGuide', 'vibration'])
 })
 
 test('switching away conceals a revealed card without skipping its owner', async ({ page }) => {
@@ -291,11 +306,8 @@ test('a denied wake lock does not interrupt the timer or pause control', async (
 
 test('core screens pass automated accessibility checks', async ({ page }, testInfo) => {
   const check = async (screen: string) => {
-    // Measure the settled card without suppressing its entrance animation.
-    if (await page.locator('.card').count()) {
-      await expect(page.locator('.card')).toHaveCSS('transform', 'none')
-      await expect(page.locator('.card')).toHaveCSS('opacity', '1')
-    }
+    // Measure settled screens without suppressing their entrance animations.
+    await settle(page)
     const result = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21aa', 'wcag22aa']).analyze()
     expect(result.violations).toEqual([])
     await page.screenshot({ path: testInfo.outputPath(`${screen}.png`), fullPage: true })
@@ -369,10 +381,11 @@ test('home confirmations pause the countdown and restore the previous timer stat
 })
 
 test('gameplay artboards keep time, instructions, and primary actions readable across screen sizes', async ({ page }, testInfo) => {
-  test.setTimeout(90_000)
+  test.setTimeout(180_000)
   await page.clock.install({ time: new Date('2026-10-03T12:00:00Z') })
   await page.clock.pauseAt(new Date('2026-10-03T12:00:01Z'))
   const capture = async (name: string, action?: string) => {
+    await settle(page)
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true)
     if (action && page.viewportSize()!.height >= 568) {
       const bounds = await page.getByRole('button', { name: action, exact: true }).boundingBox()
@@ -456,5 +469,193 @@ test('mobile, landscape, and desktop layouts have reachable actions and no horiz
     await page.getByRole('button', { name: /کارت رو پنهان کن/ }).click()
     await expect(page.getByRole('heading', { name: 'نوبت بازیکن ۲' })).toBeFocused()
   }
+  expect(errors).toEqual([])
+})
+
+test('a double tap or held Enter cannot pass a card its owner has not seen', async ({ page }) => {
+  await prepare(page)
+  await page.getByRole('button', { name: 'بزن بریم!', exact: true }).click()
+  await page.getByRole('button', { name: 'دیدن کارت بازیکن ۱' }).click()
+  const pass = (await page.getByRole('button', { name: /کارت رو پنهان کن/ }).boundingBox())!
+  await page.getByRole('button', { name: /کارت رو پنهان کن/ }).click()
+  await expect(page.getByRole('heading', { name: 'نوبت بازیکن ۲' })).toBeFocused()
+  // The second tap of a double tap on the card lands on the hide button.
+  await page.mouse.dblclick(pass.x + pass.width / 2, pass.y + pass.height / 2)
+  await expect(page.locator('.secret-word')).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'نوبت بازیکن ۲' })).toBeAttached()
+  await page.getByRole('button', { name: /کارت رو پنهان کن/ }).click()
+  await expect(page.getByRole('heading', { name: 'نوبت بازیکن ۳' })).toBeFocused()
+  await page.getByRole('button', { name: 'دیدن کارت بازیکن ۳' }).focus()
+  // A second keydown without keyup is an auto-repeat of a held key.
+  await page.keyboard.down('Enter')
+  await expect(page.getByRole('button', { name: /کارت رو پنهان کن/ })).toBeFocused()
+  await page.keyboard.down('Enter')
+  await page.keyboard.up('Enter')
+  await expect(page.getByRole('heading', { name: 'نوبت بازیکن ۳' })).toBeAttached()
+  await expect(page.locator('.secret-word')).toBeVisible()
+})
+
+test('a dialog closed by the browser without a cancel event resumes the round', async ({ page }) => {
+  await startTimer(page)
+  await page.getByRole('button', { name: 'لغو دور و بازگشت به خانه' }).click()
+  await expect(page.getByRole('dialog')).toBeVisible()
+  await page.getByRole('dialog').evaluate((dialog: HTMLDialogElement) => dialog.close())
+  await expect(page.getByRole('dialog')).toHaveCount(0)
+  await expect(page.getByRole('button', { name: 'مکث بازی' })).toBeVisible()
+  await page.getByRole('button', { name: 'لغو دور و بازگشت به خانه' }).click()
+  await expect(page.getByRole('dialog')).toBeVisible()
+})
+
+async function axe(page: Page) {
+  await settle(page)
+  const result = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21aa', 'wcag22aa']).analyze()
+  expect(result.violations).toEqual([])
+}
+
+test('the in-app vote, last-chance guess, and scoreboard decide and record each round', async ({ page }, testInfo) => {
+  test.setTimeout(60_000)
+  // Deterministic rounds: player 2 is the spy and every guess grid starts with the same order.
+  await page.addInitScript(() => { Math.random = () => 0 })
+  await page.clock.install()
+  await prepare(page)
+  const roles = await deal(page)
+  const word = roles.find((role) => role !== 'جاسوس')!
+  await page.getByRole('button', { name: 'شروع گفت‌وگو' }).click()
+  await page.clock.fastForward(3_000)
+  await page.getByRole('button', { name: 'پایان گفت‌وگو', exact: true }).click()
+  await page.getByRole('button', { name: 'بریم برای تصمیم نهایی' }).click()
+
+  const vote = page.getByRole('button', { name: /^رأی نهایی/ })
+  await expect(vote).toBeDisabled()
+  await page.getByRole('button', { name: /بازیکن ۲/ }).click()
+  await expect(page.getByRole('button', { name: /بازیکن ۲/ })).toHaveAttribute('aria-pressed', 'true')
+  // A single-spy ballot swaps the pick instead of growing.
+  await page.getByRole('button', { name: /بازیکن ۳/ }).click()
+  await expect(page.getByRole('button', { name: /بازیکن ۲/ })).toHaveAttribute('aria-pressed', 'false')
+  await page.getByRole('button', { name: /بازیکن ۲/ }).click()
+  await axe(page)
+  await page.screenshot({ path: testInfo.outputPath('vote.png'), fullPage: true })
+  await vote.click()
+
+  await expect(page.getByText('جاسوس بود!')).toBeAttached()
+  await expect(page.getByText('گیر افتاد!')).toBeAttached()
+  await expect(page.getByText(word, { exact: true })).toHaveCount(0)
+  await axe(page)
+  await page.screenshot({ path: testInfo.outputPath('verdict-caught.png'), fullPage: true })
+  await page.getByRole('button', { name: 'شانس آخر جاسوس' }).click()
+
+  const options = page.getByRole('group', { name: 'گزینه‌های حدس جاسوس' }).getByRole('button')
+  await expect(options).toHaveCount(8)
+  await expect(page.getByRole('button', { name: word, exact: true })).toBeVisible()
+  await expect(page.getByRole('button', { name: 'ثبت حدس' })).toBeDisabled()
+  const wrong = (await options.allInnerTexts()).find((option) => option !== word)!
+  await page.getByRole('button', { name: wrong, exact: true }).click()
+  await axe(page)
+  await page.screenshot({ path: testInfo.outputPath('guess.png'), fullPage: true })
+  await page.getByRole('button', { name: 'ثبت حدس' }).click()
+
+  await expect(page.getByText('شهروندها بردند!')).toBeVisible()
+  await expect(page.locator('.end-reveal__value').last()).toHaveText(word)
+  await expect(page.locator('.end-tally')).toHaveText(/شهروندها ۱\s*–\s*۰ جاسوس‌ها/)
+  await page.getByText('نقش همه‌ی بازیکن‌ها').click()
+  await expect(page.locator('.role-row__delta')).toHaveText(['+۱', '+۱'])
+  await expect(page.locator('.role-row__points')).toHaveText(['۱ امتیاز', '۰ امتیاز', '۱ امتیاز'])
+  await axe(page)
+  await page.screenshot({ path: testInfo.outputPath('end-citizens.png'), fullPage: true })
+
+  // Second round: accusing a citizen hands the spies the win at once.
+  await page.getByRole('button', { name: 'دوباره بزن بریم!' }).click()
+  for (let index = 1; index <= 3; index++) {
+    await page.getByRole('button', { name: `دیدن کارت بازیکن ${toFa(index)}` }).click()
+    await page.getByRole('button', { name: /کارت رو پنهان کن/ }).click()
+  }
+  await page.getByRole('button', { name: 'شروع گفت‌وگو' }).click()
+  await page.clock.fastForward(3_000)
+  await page.clock.fastForward(60_000)
+  await expect(page.getByRole('heading', { name: 'وقت تصمیمه!' })).toBeFocused()
+  await page.getByRole('button', { name: /بازیکن ۱/ }).click()
+  await page.getByRole('button', { name: /^رأی نهایی/ }).click()
+  await expect(page.getByText('شهروند بود!')).toBeAttached()
+  await expect(page.getByText('اشتباه شد!')).toBeAttached()
+  await page.getByRole('button', { name: 'نمایش نتیجه' }).click()
+  await expect(page.getByText('جاسوس‌ها بردند!')).toBeVisible()
+  await expect(page.locator('.end-tally')).toHaveText(/شهروندها ۱\s*–\s*۱ جاسوس‌ها/)
+  await page.getByText('نقش همه‌ی بازیکن‌ها').click()
+  await expect(page.locator('.role-row__points')).toHaveText(['۱ امتیاز', '۲ امتیاز', '۱ امتیاز'])
+  await axe(page)
+  await page.screenshot({ path: testInfo.outputPath('end-spies.png'), fullPage: true })
+})
+
+test('a spy can stop the discussion to guess, and a right guess wins the bonus', async ({ page }) => {
+  await page.addInitScript(() => { Math.random = () => 0 })
+  const word = await startTimer(page)
+  await page.getByText('زمان و راهنما', { exact: true }).click()
+  await page.getByRole('button', { name: 'جاسوسم؛ کلمه رو حدس می‌زنم' }).click()
+  await expect(page.getByRole('dialog')).toBeVisible()
+  // Cancelling resumes the clock exactly as it was.
+  await page.getByRole('dialog').getByRole('button', { name: 'ادامه‌ی بازی' }).click()
+  await expect(page.getByRole('button', { name: 'مکث بازی' })).toBeVisible()
+  await page.getByRole('button', { name: 'جاسوسم؛ کلمه رو حدس می‌زنم' }).click()
+  await page.getByRole('button', { name: 'آره، حدس می‌زنم' }).click()
+  await expect(page.getByRole('heading', { name: 'جاسوس، کلمه چیه؟' })).toBeFocused()
+  await page.getByRole('button', { name: word, exact: true }).click()
+  await page.getByRole('button', { name: 'ثبت حدس' }).click()
+  await expect(page.getByText('جاسوس‌ها بردند!')).toBeVisible()
+  await expect(page.getByText('وسط گفت‌وگو کلمه رو درست حدس زد')).toBeVisible()
+  await page.getByText('نقش همه‌ی بازیکن‌ها').click()
+  await expect(page.locator('.role-row__delta')).toHaveText(['+۳'])
+})
+
+test('player names are stored and follow the deal and the vote', async ({ page }, testInfo) => {
+  await prepare(page)
+  await page.getByText('تنظیمات بیشتر').click()
+  await page.getByRole('button', { name: /نام بازیکن‌ها/ }).click()
+  await expect(page.getByRole('heading', { name: 'نام بازیکن‌ها' })).toBeFocused()
+  await page.getByLabel('نام بازیکن ۱').fill('سارا')
+  await page.getByLabel('نام بازیکن ۳').fill('علی')
+  await axe(page)
+  await page.screenshot({ path: testInfo.outputPath('players.png'), fullPage: true })
+  await page.getByRole('button', { name: 'ذخیره' }).click()
+  // Returning from the names screen keeps the settings panel open.
+  await expect(page.getByRole('button', { name: /نام بازیکن‌ها/ })).toContainText('۲ نام ثبت شده')
+  const stored = await page.evaluate((key) => JSON.parse(localStorage.getItem(key)!), PREFERENCES_KEY)
+  expect(stored.names).toEqual(['سارا', '', 'علی'])
+  await page.getByRole('button', { name: 'بزن بریم!', exact: true }).click()
+  await expect(page.getByRole('heading', { name: 'نوبت سارا' })).toBeFocused()
+  for (const name of ['سارا', 'بازیکن ۲', 'علی']) {
+    await page.getByRole('button', { name: `دیدن کارت ${name}` }).click()
+    await page.getByRole('button', { name: /کارت رو پنهان کن/ }).click()
+  }
+  await page.getByRole('button', { name: 'شروع گفت‌وگو' }).click()
+  await page.getByRole('button', { name: 'پایان گفت‌وگو', exact: true }).click()
+  await page.getByRole('button', { name: 'بریم برای تصمیم نهایی' }).click()
+  await expect(page.getByRole('group', { name: 'انتخاب مظنون‌ها' }).getByRole('button'))
+    .toHaveText([/سارا/, /بازیکن ۲/, /علی/])
+})
+
+test('sound and vibration settings persist and never block play', async ({ page }) => {
+  const errors: string[] = []
+  page.on('pageerror', (error) => errors.push(error.message))
+  // Desktop Chromium has no vibration motor; record what a phone would receive.
+  await page.addInitScript(() => {
+    const calls: unknown[] = []
+    Object.defineProperty(window, 'vibrations', { value: calls })
+    Object.defineProperty(navigator, 'vibrate', { configurable: true, value: (pattern: unknown) => calls.push(pattern) > 0 })
+  })
+  const vibrations = () => page.evaluate(() => (window as unknown as { vibrations: unknown[] }).vibrations.length)
+  await prepare(page)
+  const sound = page.getByRole('button', { name: 'صدای بازی' })
+  await expect(sound).toHaveAttribute('aria-pressed', 'true')
+  await sound.click()
+  await expect(sound).toHaveAttribute('aria-pressed', 'false')
+  await page.getByText('تنظیمات بیشتر').click()
+  expect(await vibrations()).toBeGreaterThan(0)
+  await page.getByRole('switch', { name: 'لرزش گوشی' }).click()
+  await expect(page.getByRole('switch', { name: 'لرزش گوشی' })).toHaveAttribute('aria-checked', 'false')
+  const stored = await page.evaluate((key) => JSON.parse(localStorage.getItem(key)!), PREFERENCES_KEY)
+  expect(stored).toMatchObject({ sound: false, vibration: false })
+  await page.evaluate(() => (window as unknown as { vibrations: unknown[] }).vibrations.splice(0))
+  await deal(page)
+  expect(await vibrations()).toBe(0)
   expect(errors).toEqual([])
 })

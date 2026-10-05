@@ -1,23 +1,31 @@
-import { useState } from 'react'
 import { Screen } from '../components/Screen'
-import { CheckIcon, ClockIcon, PlayersIcon, SpyIcon } from '../components/Icons'
+import { CheckIcon, ClockIcon, PlayersIcon, SoundOffIcon, SoundOnIcon, SpyIcon, UsersIcon } from '../components/Icons'
 import type { GameConfig } from '../game/types'
 import { toFa } from '../game/logic'
 import { CATEGORIES, getWordPool } from '../game/words'
+import { cue } from '../game/feedback'
+import { isNative } from '../platform/native'
 import spotlightSrc from '../assets/spotlight.svg'
 import spyHeroSrc from '../assets/spy-hero.svg'
+
+const canVibrate = isNative || 'vibrate' in navigator
 
 interface HomeScreenProps {
   config: GameConfig
   setConfig: (patch: Partial<GameConfig>) => void
   onStart: () => void
   onOpenGuide: () => void
+  onOpenPlayers: () => void
+  /** Kept by the app so the panel is still open after editing names. */
+  optionsOpen: boolean
+  onOptionsToggle: (open: boolean) => void
   validationError: string | null
 }
 
-export function HomeScreen({ config, setConfig, onStart, onOpenGuide, validationError }: HomeScreenProps) {
-  const [optionsOpen, setOptionsOpen] = useState(false)
+export function HomeScreen({ config, setConfig, onStart, onOpenGuide, onOpenPlayers, optionsOpen, onOptionsToggle,
+  validationError }: HomeScreenProps) {
   const maxSpies = Math.min(8, config.playerCount - 1)
+  const namedCount = config.names.slice(0, config.playerCount).filter((name) => name.trim()).length
 
   const updatePlayers = (playerCount: number) => {
     setConfig({ playerCount, spyCount: Math.min(config.spyCount, playerCount - 1) })
@@ -26,11 +34,15 @@ export function HomeScreen({ config, setConfig, onStart, onOpenGuide, validation
   return (
     <Screen
       className={`home-screen${optionsOpen ? ' home-screen--options-open' : ''}`}
-      topActions={
+      topActions={<>
         <button type="button" className="icon-btn" aria-label="راهنمای بازی" onClick={onOpenGuide}>
           <span className="help-badge" aria-hidden>?</span>
         </button>
-      }
+        <button type="button" className="icon-btn sound-toggle" aria-label="صدای بازی" aria-pressed={config.sound}
+          onClick={() => setConfig({ sound: !config.sound })}>
+          {config.sound ? <SoundOnIcon /> : <SoundOffIcon />}
+        </button>
+      </>}
       background={<img className="home-spotlight" src={spotlightSrc} alt="" aria-hidden />}
     >
       <h1 className="visually-hidden" tabIndex={-1} data-screen-title>جاسوس</h1>
@@ -45,7 +57,7 @@ export function HomeScreen({ config, setConfig, onStart, onOpenGuide, validation
             value={config.minutes} min={1} max={30} onChange={(minutes) => setConfig({ minutes })} />
         </section>
 
-        <details className="home-options" onToggle={(event) => setOptionsOpen(event.currentTarget.open)}>
+        <details className="home-options" open={optionsOpen} onToggle={(event) => onOptionsToggle(event.currentTarget.open)}>
           <summary>
             تنظیمات بیشتر
             {(config.category !== 'all' || config.spyGuide) && (
@@ -65,6 +77,13 @@ export function HomeScreen({ config, setConfig, onStart, onOpenGuide, validation
               </select>
             </div>
             <p className="setting-note">{toFa(getWordPool(config.category).length)} کلمه؛ در این جلسه بدون تکرار تا پایان مجموعه.</p>
+            <button type="button" className="spy-guide-row" onClick={onOpenPlayers}>
+              <span className="toggle-copy">
+                <strong>نام بازیکن‌ها</strong>
+                <span>{namedCount ? `${toFa(namedCount)} نام ثبت شده` : 'به جای «بازیکن ۱»، اسم هر نفر رو بنویسید.'}</span>
+              </span>
+              <UsersIcon className="row-icon" />
+            </button>
             <button type="button" className="spy-guide-row" role="switch" aria-checked={config.spyGuide}
               aria-describedby="spy-guide-description" onClick={() => setConfig({ spyGuide: !config.spyGuide })}>
               <span className="toggle-copy">
@@ -75,6 +94,13 @@ export function HomeScreen({ config, setConfig, onStart, onOpenGuide, validation
                 {config.spyGuide ? <CheckIcon width={16} height={16} /> : null}
               </span>
             </button>
+            {canVibrate && <button type="button" className="spy-guide-row" role="switch" aria-checked={config.vibration} aria-label="لرزش گوشی"
+              onClick={() => setConfig({ vibration: !config.vibration })}>
+              <span className="toggle-copy"><strong>لرزش گوشی</strong></span>
+              <span className={`toggle ${config.vibration ? 'toggle--on' : ''}`} aria-hidden>
+                {config.vibration ? <CheckIcon width={16} height={16} /> : null}
+              </span>
+            </button>}
             <p className="setting-note">{config.spyCount >= config.playerCount / 2
               ? 'برای دور متعادل‌تر، شهروندها بیشتر از جاسوس‌ها باشند.'
               : 'بار اولتونه؟ با یک جاسوس و راهنمای روشن شروع کنید.'}</p>
@@ -87,7 +113,7 @@ export function HomeScreen({ config, setConfig, onStart, onOpenGuide, validation
         <img className="home-hero" src={spyHeroSrc} alt="" />
       </div>
       <div className="footer-actions">
-        <button type="button" className="btn" onClick={onStart}>بزن بریم!</button>
+        <button type="button" className="btn btn--glow" data-cue="deal" onClick={onStart}>بزن بریم!</button>
       </div>
     </Screen>
   )
@@ -108,7 +134,7 @@ function SettingSelect({ id, icon, label, value, min, max, onChange }: SettingSe
     <label className="setting-row" htmlFor={id}>
       <span className="setting-row__label">{icon}<span>{label}</span></span>
       <span className="setting-select">
-        <select id={id} value={value} onChange={(event) => onChange(Number(event.target.value))}>
+        <select id={id} value={value} onChange={(event) => { onChange(Number(event.target.value)); cue('select') }}>
           {Array.from({ length: max - min + 1 }, (_, index) => min + index).map((number) => (
             <option key={number} value={number}>{toFa(number)}</option>
           ))}
