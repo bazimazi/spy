@@ -747,7 +747,7 @@ button:disabled {
   text-align: start;
 }
 
-button:focus-visible, select:focus-visible, summary:focus-visible, .role-list:focus-visible, .timer-tools__panel:focus-visible {
+button:focus-visible, summary:focus-visible, .role-list:focus-visible, .timer-tools__panel:focus-visible {
   outline: 3px solid #ffe1ae;
   outline-offset: 4px;
 }
@@ -811,36 +811,70 @@ button:focus-visible, select:focus-visible, summary:focus-visible, .role-list:fo
   height: 28px;
 }
 
-.setting-select {
-  position: relative;
-  flex-shrink: 0;
-}
-
-.setting-select select {
-  appearance: none;
+/* Number stepper: forced LTR so minus sits left and plus right, matching the arrow keys. */
+.stepper {
   direction: ltr;
-  min-width: 76px;
-  height: 44px;
-  padding: 0 8px 0 24px;
-  border: 0;
-  border-radius: 4px;
-  background: transparent;
-  color: var(--c-text);
-  font: inherit;
-  font-size: 14px;
-  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  flex-shrink: 0;
+  padding: 3px;
+  border-radius: 999px;
+  background: rgba(20, 12, 26, 0.55);
+  box-shadow: inset 0 0 0 1px rgba(193, 187, 197, 0.18);
 }
 
-.setting-select select option {
-  color: var(--c-text);
-  background: var(--c-bg-deep);
+.stepper__btn {
+  width: 34px;
+  height: 34px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  color: var(--c-primary);
+  background: rgba(247, 166, 50, 0.1);
+  touch-action: manipulation;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+  transition: background-color 160ms ease, color 160ms ease, transform 120ms ease;
 }
 
-.setting-select__arrow {
-  position: absolute;
-  left: 0;
-  top: 16px;
-  pointer-events: none;
+/* Extend the hit area to 44px without growing the visual pill. */
+.stepper__btn { position: relative; }
+.stepper__btn::after { content: ''; position: absolute; inset: -5px; }
+
+.stepper__btn:hover:not(:disabled) { background: rgba(247, 166, 50, 0.2); }
+.stepper__btn:active:not(:disabled) { background: var(--c-primary); color: var(--c-on-primary); transform: scale(0.9); }
+.stepper__btn:disabled { color: var(--c-text-dim); background: transparent; opacity: 0.35; }
+
+.stepper__value {
+  min-width: 40px;
+  height: 34px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  border-radius: 8px;
+  color: var(--c-text);
+  font-size: 17px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  cursor: default;
+}
+
+.stepper__value:focus-visible { outline: 3px solid #ffe1ae; outline-offset: 2px; }
+
+.stepper__digit { display: inline-block; }
+.stepper__digit--up { animation: stepper-up 200ms cubic-bezier(0.2, 0.9, 0.3, 1.2); }
+.stepper__digit--down { animation: stepper-down 200ms cubic-bezier(0.2, 0.9, 0.3, 1.2); }
+
+@keyframes stepper-up {
+  from { transform: translateY(60%); opacity: 0; }
+}
+
+@keyframes stepper-down {
+  from { transform: translateY(-60%); opacity: 0; }
 }
 
 .home-options {
@@ -868,13 +902,37 @@ button:focus-visible, select:focus-visible, summary:focus-visible, .role-list:fo
   background: var(--c-bg-deep);
 }
 
-.home-options__panel .category-field {
+.category-field__label { color: var(--c-text-muted); font-size: 12px; }
+
+.chip-group {
+  display: flex;
   flex-wrap: wrap;
+  gap: 8px;
 }
 
-.home-options__panel .category-field select {
-  flex: 1;
-  min-width: 140px;
+.chip {
+  min-height: 36px;
+  padding: 4px 14px;
+  border-radius: 999px;
+  color: var(--c-text);
+  font-size: 13px;
+  background: rgba(255, 255, 255, 0.05);
+  box-shadow: inset 0 0 0 1px var(--c-border);
+  touch-action: manipulation;
+  transition: background-color 180ms ease, color 180ms ease, box-shadow 180ms ease, transform 120ms ease;
+}
+
+/* Keep a 44px touch target while the chip stays visually compact. */
+.chip { position: relative; }
+.chip::after { content: ''; position: absolute; inset: -4px 0; }
+
+.chip:hover:not(.chip--on) { background: rgba(255, 255, 255, 0.1); }
+.chip:active { transform: scale(0.95); }
+.chip--on {
+  color: var(--c-on-primary);
+  font-weight: 600;
+  background: var(--c-primary);
+  box-shadow: 0 4px 14px rgba(247, 166, 50, 0.3);
 }
 
 .home-options__panel .setting-note:last-child {
@@ -916,8 +974,7 @@ button:focus-visible, select:focus-visible, summary:focus-visible, .role-list:fo
 .eyebrow { margin: 0; color: var(--c-text-muted); font-size: 12px; }
 .setting-row__value-text { font-size: 18px; font-weight: 600; }
 .setting-note { margin: 8px 2px; font-size: 12px; color: var(--c-text-muted); }
-.category-field { display: flex; align-items: center; justify-content: space-between; gap: 12px; font-size: 14px; }
-.category-field select { min-width: 156px; min-height: 44px; padding: 8px 12px; border: 1px solid var(--c-border); border-radius: 8px; font: inherit; color: var(--c-text); background: #2c2035; }
+.category-field { display: flex; flex-direction: column; gap: 8px; font-size: 14px; }
 .toggle-copy { display: flex; flex-direction: column; gap: 2px; }
 .toggle-copy strong { font-weight: 500; }
 .toggle-copy > span { font-size: 12px; color: var(--c-text-muted); }
@@ -931,6 +988,8 @@ button:focus-visible, select:focus-visible, summary:focus-visible, .role-list:fo
 .secret-word { font-size: clamp(24px, 7vw, 32px); overflow-wrap: anywhere; }
 .privacy-note { text-align: center; font-size: 12px; color: var(--c-text-muted); margin: 0 0 10px; }
 summary { cursor: pointer; min-height: 44px; display: list-item; padding: 8px 0; font-size: 14px; }
+/* Disclosure bodies own their margins so the slide measures the same height it settles at. */
+.disclosure__body { display: flow-root; }
 .all-roles { width: 100%; }
 .all-roles summary { text-align: center; color: var(--c-primary); }
 .role-list { list-style: none; padding: 0; margin: 8px 0; }
@@ -1325,8 +1384,8 @@ summary { cursor: pointer; min-height: 44px; display: list-item; padding: 8px 0;
   80% { transform: rotate(-2deg); }
 }
 
-/* Timer: seconds tick, a fuse burns down, the last ten seconds pulse red. */
-.timer-display__seconds { display: inline-block; animation: second-tick 320ms ease-out; }
+/* Timer: changed digits tick, a fuse burns down, the last ten seconds pulse red. */
+.timer-display__digit { display: inline-block; animation: second-tick 320ms ease-out; }
 @keyframes second-tick {
   from { opacity: 0.35; transform: translateY(-22%); }
 }

@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type CSSProperties } from 'react'
 import { GameplayScreen } from '../components/GameplayScreen'
 import { ConfirmDialog } from '../components/ConfirmDialog'
+import { Disclosure } from '../components/Disclosure'
 import { PauseIcon, PlayIcon } from '../components/Icons'
 import { formatTime } from '../game/logic'
 import { cue } from '../game/feedback'
@@ -50,7 +51,7 @@ export function TimerScreen({ totalSeconds, onFinish, onSpyGuess, onHome }: Time
     pause()
   }
 
-  const [minutes, seconds] = formatTime(remaining).split(':')
+  const reading = formatTime(remaining)
   return (
     <GameplayScreen className={`timer-screen${isWarning ? ' is-warning' : ''}${isRunning ? '' : ' is-paused'}`}
       onHome={onHome} onRequestHome={pauseForConfirmation}
@@ -61,7 +62,9 @@ export function TimerScreen({ totalSeconds, onFinish, onSpyGuess, onHome }: Time
           className={`stopwatch ${isWarning && isRunning ? 'is-warn' : ''}`} aria-hidden />
         <div className="timer-reading">
           <div className={`timer-display ${isWarning ? 'is-warn' : ''}`} role="timer" aria-label="زمان باقی‌مانده" aria-live="off" dir="ltr">
-            {minutes}:<span className="timer-display__seconds" key={seconds}>{seconds}</span>
+            {/* Keyed by position and value, so only the digits that change remount and tick. */}
+            {[...reading].map((char, index) => char === ':' ? char
+              : <span className="timer-display__digit" key={`${index}-${char}`}>{char}</span>)}
           </div>
           <button type="button" className="timer-pause" onClick={isRunning ? pause : resume}
             aria-label={isRunning ? 'مکث بازی' : 'ادامه‌ی بازی'}>
@@ -77,10 +80,7 @@ export function TimerScreen({ totalSeconds, onFinish, onSpyGuess, onHome }: Time
       </div>
       <div className="footer-actions play-footer">
         <div className="play-footer__above">
-          {/* The click sets state at once; `toggle` arrives later and covers find-in-page. */}
-          <details className="timer-tools" open={toolsOpen}
-            onToggle={(event) => setToolsOpen(event.currentTarget.open)}>
-            <summary onClick={(event) => { event.preventDefault(); setToolsOpen(!toolsOpen) }}>زمان و راهنما</summary>
+          <Disclosure className="timer-tools" summary="زمان و راهنما" open={toolsOpen} onOpenChange={setToolsOpen}>
             <div className="timer-tools__panel" role="region" aria-label="زمان و راهنمای بازی" tabIndex={0}>
               <button type="button" className="btn btn--ghost" onClick={addMinute} data-cue="select">۱ دقیقه بیشتر</button>
               <progress className="round-progress" max={allocatedSeconds} value={remaining} aria-label="زمان باقی‌مانده‌ی دور" />
@@ -98,7 +98,7 @@ export function TimerScreen({ totalSeconds, onFinish, onSpyGuess, onHome }: Time
               </ul>
               <p className="play-note">خود کلمه، تعداد حرف‌ها و بخش‌هاش رو نگویید.</p>
             </div>
-          </details>
+          </Disclosure>
           <img className="play-spy" src={spyHeroSrc} alt="" aria-hidden
             style={{ '--spy-elapsed': allocatedSeconds ? 1 - remaining / allocatedSeconds : 1 } as CSSProperties} />
         </div>

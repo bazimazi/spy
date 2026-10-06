@@ -2,6 +2,7 @@ import { useEffect } from 'react'
 import type { CSSProperties } from 'react'
 import { GameplayScreen } from '../components/GameplayScreen'
 import { Confetti } from '../components/Confetti'
+import { Disclosure } from '../components/Disclosure'
 import { playerName, toFa } from '../game/logic'
 import { cue } from '../game/feedback'
 import type { GameConfig, OutcomeReason, RoundOutcome, RoundState, SessionScore } from '../game/types'
@@ -66,8 +67,7 @@ export function EndScreen({ config, round, outcome, score, roundNumber, onPlayAg
           <span className="end-tally__sep" aria-hidden>–</span>
           <span><b>{toFa(score.wins.spies)}</b> جاسوس‌ها</span>
         </p>}
-        <details className="all-roles">
-          <summary>نقش همه‌ی بازیکن‌ها{scored ? ' و امتیازها' : ''}</summary>
+        <Disclosure className="all-roles" summary={`نقش همه‌ی بازیکن‌ها${scored ? ' و امتیازها' : ''}`}>
           <p className="play-meta">موضوع: {round.word.category}</p>
           <ul className="role-list" tabIndex={0} aria-label="نقش همه‌ی بازیکن‌ها">
             {Array.from({ length: config.playerCount }, (_, index) => {
@@ -83,7 +83,7 @@ export function EndScreen({ config, round, outcome, score, roundNumber, onPlayAg
               </li>
             })}
           </ul>
-        </details>
+        </Disclosure>
       </div>
 
       <div className="footer-actions">

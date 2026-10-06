@@ -51,33 +51,62 @@ async function startTimer(page: Page) {
 
 test('settings enforce boundaries, adjust spy count, and survive reloads', async ({ page }) => {
   await page.goto('/')
-  await page.getByLabel('تعداد بازیکن‌ها').selectOption('30')
-  await expect(page.getByLabel('تعداد جاسوس‌ها').locator('option')).toHaveCount(8)
-  await page.getByLabel('تعداد جاسوس‌ها').selectOption('8')
-  await page.getByLabel('تعداد بازیکن‌ها').selectOption('3')
-  await expect(page.getByLabel('تعداد جاسوس‌ها')).toHaveValue('2')
-  await expect(page.getByLabel('تعداد جاسوس‌ها').locator('option')).toHaveCount(2)
-  await expect(page.getByLabel('تعداد بازیکن‌ها').locator('option').first()).toHaveAttribute('value', '3')
-  await expect(page.getByLabel('تعداد بازیکن‌ها').locator('option').last()).toHaveAttribute('value', '30')
-  await page.getByLabel('زمان بازی (دقیقه)').selectOption('30')
-  await expect(page.getByLabel('زمان بازی (دقیقه)').locator('option')).toHaveCount(30)
+  const players = page.getByRole('spinbutton', { name: 'تعداد بازیکن‌ها' })
+  const spies = page.getByRole('spinbutton', { name: 'تعداد جاسوس‌ها' })
+  const minutes = page.getByRole('spinbutton', { name: 'زمان بازی (دقیقه)' })
+  await players.press('End')
+  await expect(players).toHaveAttribute('aria-valuenow', '30')
+  await expect(players).toHaveAttribute('aria-valuetext', '۳۰')
+  await expect(spies).toHaveAttribute('aria-valuemax', '8')
+  await spies.press('End')
+  await expect(spies).toHaveAttribute('aria-valuenow', '8')
+  await expect(page.getByRole('button', { name: 'زیاد کردن تعداد جاسوس‌ها' })).toBeDisabled()
+  await players.press('Home')
+  await expect(players).toHaveAttribute('aria-valuenow', '3')
+  await expect(players).toHaveAttribute('aria-valuemin', '3')
+  await expect(page.getByRole('button', { name: 'کم کردن تعداد بازیکن‌ها' })).toBeDisabled()
+  await expect(spies).toHaveAttribute('aria-valuenow', '2')
+  await expect(spies).toHaveAttribute('aria-valuemax', '2')
+  await page.getByRole('button', { name: 'کم کردن تعداد جاسوس‌ها' }).click()
+  await expect(spies).toHaveAttribute('aria-valuenow', '1')
+  await page.getByRole('button', { name: 'زیاد کردن تعداد بازیکن‌ها' }).click()
+  await expect(players).toHaveAttribute('aria-valuenow', '4')
+  await players.press('ArrowDown')
+  await expect(players).toHaveAttribute('aria-valuenow', '3')
+  await minutes.press('End')
+  await expect(minutes).toHaveAttribute('aria-valuenow', '30')
   await page.getByText('تنظیمات بیشتر').click()
-  await page.getByLabel('موضوع کلمه‌ها').selectOption('غذا')
+  await expect(page.getByRole('radiogroup', { name: 'موضوع کلمه‌ها' }).getByRole('radio')).toHaveCount(6)
+  await page.getByRole('radio', { name: 'غذا' }).click()
   await page.getByRole('switch', { name: /راهنما برای جاسوس/ }).click()
   await page.reload()
   await expect(page.locator('.home-options')).not.toHaveAttribute('open', '')
   await expect(page.locator('.home-options > summary')).toContainText('غذا · راهنمای جاسوس')
   await page.getByText('تنظیمات بیشتر').click()
-  await expect(page.getByLabel('موضوع کلمه‌ها')).toHaveValue('غذا')
+  await expect(page.getByRole('radio', { name: 'غذا' })).toHaveAttribute('aria-checked', 'true')
   await expect(page.getByRole('switch', { name: /راهنما برای جاسوس/ })).toHaveAttribute('aria-checked', 'true')
-  await expect(page.getByLabel('تعداد بازیکن‌ها')).toHaveValue('3')
-  await expect(page.getByLabel('زمان بازی (دقیقه)')).toHaveValue('30')
+  await expect(players).toHaveAttribute('aria-valuenow', '3')
+  await expect(minutes).toHaveAttribute('aria-valuenow', '30')
+})
+
+test('holding a stepper button repeats the step', async ({ page }) => {
+  await page.goto('/')
+  const players = page.getByRole('spinbutton', { name: 'تعداد بازیکن‌ها' })
+  await expect(players).toHaveAttribute('aria-valuenow', '5')
+  const plus = page.getByRole('button', { name: 'زیاد کردن تعداد بازیکن‌ها' })
+  await plus.hover()
+  await page.mouse.down()
+  await expect.poll(async () => Number(await players.getAttribute('aria-valuenow'))).toBeGreaterThan(8)
+  await page.mouse.up()
+  const held = await players.getAttribute('aria-valuenow')
+  await page.waitForTimeout(300)
+  await expect(players).toHaveAttribute('aria-valuenow', held!)
 })
 
 test('corrupt or denied browser storage falls back to a playable game', async ({ page }) => {
   await page.addInitScript((key) => localStorage.setItem(key, '{broken'), PREFERENCES_KEY)
   await page.goto('/')
-  await expect(page.getByLabel('تعداد بازیکن‌ها')).toHaveValue('5')
+  await expect(page.getByRole('spinbutton', { name: 'تعداد بازیکن‌ها' })).toHaveAttribute('aria-valuenow', '5')
   await page.addInitScript(() => {
     Object.defineProperty(window, 'localStorage', { get() { throw new Error('Storage denied') } })
   })
@@ -165,6 +194,37 @@ test('switching away conceals a revealed card without skipping its owner', async
   await page.evaluate(() => Object.defineProperty(document, 'hidden', { configurable: true, value: false }))
   await page.getByRole('button', { name: 'دیدن کارت بازیکن ۱' }).click()
   await expect(page.locator('.secret-word')).toHaveText(role)
+})
+
+test('disclosures slide open and fold shut for every motion preference', async ({ page }) => {
+  const body = page.locator('.home-options .disclosure__body')
+  const sliding = () => body.evaluate((element) => element.getAnimations().length > 0)
+  for (const reducedMotion of ['no-preference', 'reduce'] as const) {
+    await page.emulateMedia({ reducedMotion })
+    await prepare(page)
+    await page.getByText('تنظیمات بیشتر').click()
+    await expect(page.locator('.home-options')).toHaveAttribute('open', '')
+    expect(await sliding()).toBe(true)
+    await expect.poll(sliding).toBe(false)
+    // Sample every frame of the fold: the visible body height must only shrink, never spring back.
+    const frames = page.evaluate(() => new Promise<number[]>((resolve) => {
+      const details = document.querySelector('.home-options') as HTMLDetailsElement
+      const heights: number[] = []
+      const sample = () => {
+        heights.push(details.open ? details.querySelector('.disclosure__body')!.getBoundingClientRect().height : 0)
+        if (details.open || heights.length < 3) requestAnimationFrame(sample)
+        else resolve(heights)
+      }
+      requestAnimationFrame(sample)
+    }))
+    await page.getByText('تنظیمات بیشتر').click()
+    // The body stays in place while it folds, then the element closes.
+    await expect(page.locator('.home-options')).toHaveAttribute('open', '')
+    expect(await sliding()).toBe(true)
+    await expect(page.locator('.home-options')).not.toHaveAttribute('open', '')
+    const heights = await frames
+    expect(heights.every((height, index) => index === 0 || height <= heights[index - 1] + 0.5)).toBe(true)
+  }
 })
 
 test('reference deck shows both roles and opening the guide preserves a private handoff', async ({ page }, testInfo) => {

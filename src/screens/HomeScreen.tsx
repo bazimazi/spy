@@ -1,5 +1,7 @@
 import { Screen } from '../components/Screen'
-import { CheckIcon, ClockIcon, PlayersIcon, SoundOffIcon, SoundOnIcon, SpyIcon, UsersIcon } from '../components/Icons'
+import { Disclosure } from '../components/Disclosure'
+import { useEffect, useRef, type KeyboardEvent, type MouseEvent, type PointerEvent, type ReactNode } from 'react'
+import { CheckIcon, ClockIcon, MinusIcon, PlayersIcon, PlusIcon, SoundOffIcon, SoundOnIcon, SpyIcon, UsersIcon } from '../components/Icons'
 import type { GameConfig } from '../game/types'
 import { toFa } from '../game/logic'
 import { CATEGORIES, getWordPool } from '../game/words'
@@ -49,33 +51,25 @@ export function HomeScreen({ config, setConfig, onStart, onOpenGuide, onOpenPlay
 
       <div className="home-setup">
         <section className="settings" aria-label="تنظیمات بازی">
-          <SettingSelect id="player-count" icon={<PlayersIcon />} label="تعداد بازیکن‌ها"
+          <SettingStepper id="player-count" icon={<PlayersIcon />} label="تعداد بازیکن‌ها"
             value={config.playerCount} min={3} max={30} onChange={updatePlayers} />
-          <SettingSelect id="spy-count" icon={<SpyIcon />} label="تعداد جاسوس‌ها"
+          <SettingStepper id="spy-count" icon={<SpyIcon />} label="تعداد جاسوس‌ها"
             value={config.spyCount} min={1} max={maxSpies} onChange={(spyCount) => setConfig({ spyCount })} />
-          <SettingSelect id="round-minutes" icon={<ClockIcon />} label="زمان بازی (دقیقه)"
+          <SettingStepper id="round-minutes" icon={<ClockIcon />} label="زمان بازی (دقیقه)"
             value={config.minutes} min={1} max={30} onChange={(minutes) => setConfig({ minutes })} />
         </section>
 
-        <details className="home-options" open={optionsOpen} onToggle={(event) => onOptionsToggle(event.currentTarget.open)}>
-          <summary>
-            تنظیمات بیشتر
-            {(config.category !== 'all' || config.spyGuide) && (
-              <span className="home-options__active">
-                {[config.category !== 'all' ? config.category : null, config.spyGuide ? 'راهنمای جاسوس' : null]
-                  .filter(Boolean).join(' · ')}
-              </span>
-            )}
-          </summary>
+        <Disclosure className="home-options" open={optionsOpen} onOpenChange={onOptionsToggle} summary={<>
+          تنظیمات بیشتر
+          {(config.category !== 'all' || config.spyGuide) && (
+            <span className="home-options__active">
+              {[config.category !== 'all' ? config.category : null, config.spyGuide ? 'راهنمای جاسوس' : null]
+                .filter(Boolean).join(' · ')}
+            </span>
+          )}
+        </>}>
           <div className="home-options__panel">
-            <div className="category-field">
-              <label htmlFor="category">موضوع کلمه‌ها</label>
-              <select id="category" value={config.category}
-                onChange={(event) => setConfig({ category: event.target.value as GameConfig['category'] })}>
-                <option value="all">همه‌ی موضوع‌ها</option>
-                {CATEGORIES.map((category) => <option key={category} value={category}>{category}</option>)}
-              </select>
-            </div>
+            <CategoryPicker value={config.category} onChange={(category) => setConfig({ category })} />
             <p className="setting-note">{toFa(getWordPool(config.category).length)} کلمه؛ در این جلسه بدون تکرار تا پایان مجموعه.</p>
             <button type="button" className="spy-guide-row" onClick={onOpenPlayers}>
               <span className="toggle-copy">
@@ -105,7 +99,7 @@ export function HomeScreen({ config, setConfig, onStart, onOpenGuide, onOpenPlay
               ? 'برای دور متعادل‌تر، شهروندها بیشتر از جاسوس‌ها باشند.'
               : 'بار اولتونه؟ با یک جاسوس و راهنمای روشن شروع کنید.'}</p>
           </div>
-        </details>
+        </Disclosure>
         {validationError && <p className="error" role="alert">{validationError}</p>}
       </div>
 
@@ -119,9 +113,9 @@ export function HomeScreen({ config, setConfig, onStart, onOpenGuide, onOpenPlay
   )
 }
 
-interface SettingSelectProps {
+interface SettingStepperProps {
   id: string
-  icon: React.ReactNode
+  icon: ReactNode
   label: string
   value: number
   min: number
@@ -129,20 +123,135 @@ interface SettingSelectProps {
   onChange: (value: number) => void
 }
 
-function SettingSelect({ id, icon, label, value, min, max, onChange }: SettingSelectProps) {
+const HOLD_DELAY = 400
+const HOLD_INTERVAL = 90
+
+/** Compact − value + control. Holding a button repeats the step so long ranges stay quick to cross. */
+function SettingStepper({ id, icon, label, value, min, max, onChange }: SettingStepperProps) {
+  const labelId = `${id}-label`
+  const latest = useRef({ value, min, max, onChange })
+  latest.current = { value, min, max, onChange }
+  const holdTimer = useRef<number>(undefined)
+  const previous = useRef(value)
+  const direction = value > previous.current ? 'up' : value < previous.current ? 'down' : null
+  useEffect(() => { previous.current = value }, [value])
+
+  const set = (next: number) => {
+    const { value: current, min: low, max: high, onChange: change } = latest.current
+    const clamped = Math.min(high, Math.max(low, next))
+    if (clamped === current) return false
+    change(clamped)
+    cue('select')
+    return true
+  }
+
+  const stopHold = () => {
+    window.clearTimeout(holdTimer.current)
+  }
+  useEffect(() => stopHold, [])
+
+  const startHold = (delta: number) => {
+    stopHold()
+    if (!set(latest.current.value + delta)) return
+    const repeat = () => {
+      if (set(latest.current.value + delta)) holdTimer.current = window.setTimeout(repeat, HOLD_INTERVAL)
+    }
+    holdTimer.current = window.setTimeout(repeat, HOLD_DELAY)
+  }
+
+  const stepButton = (delta: number) => ({
+    onPointerDown: (event: PointerEvent<HTMLButtonElement>) => {
+      if (event.button !== 0) return
+      event.currentTarget.setPointerCapture(event.pointerId)
+      startHold(delta)
+    },
+    onPointerUp: stopHold,
+    onPointerCancel: stopHold,
+    onLostPointerCapture: stopHold,
+    onContextMenu: (event: MouseEvent) => event.preventDefault(),
+    // Pointer presses already stepped; assistive technology clicks (detail 0) step here.
+    onClick: (event: MouseEvent) => { if (event.detail === 0) set(latest.current.value + delta) },
+  })
+
+  const onKeyDown = (event: KeyboardEvent<HTMLSpanElement>) => {
+    const steps: Record<string, number> = {
+      ArrowUp: value + 1, ArrowRight: value + 1, ArrowDown: value - 1, ArrowLeft: value - 1,
+      PageUp: value + 5, PageDown: value - 5, Home: min, End: max,
+    }
+    if (!(event.key in steps)) return
+    event.preventDefault()
+    set(steps[event.key])
+  }
+
   return (
-    <label className="setting-row" htmlFor={id}>
-      <span className="setting-row__label">{icon}<span>{label}</span></span>
-      <span className="setting-select">
-        <select id={id} value={value} onChange={(event) => { onChange(Number(event.target.value)); cue('select') }}>
-          {Array.from({ length: max - min + 1 }, (_, index) => min + index).map((number) => (
-            <option key={number} value={number}>{toFa(number)}</option>
-          ))}
-        </select>
-        <svg className="setting-select__arrow" width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden>
-          <path d="m2 4 4 4 4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-        </svg>
+    <div className="setting-row">
+      <span className="setting-row__label">{icon}<span id={labelId}>{label}</span></span>
+      <span className="stepper">
+        <button type="button" className="stepper__btn" tabIndex={-1} aria-label={`کم کردن ${label}`}
+          disabled={value <= min} {...stepButton(-1)}>
+          <MinusIcon width={18} height={18} />
+        </button>
+        <span id={id} className="stepper__value" role="spinbutton" tabIndex={0} aria-labelledby={labelId}
+          aria-valuenow={value} aria-valuemin={min} aria-valuemax={max} aria-valuetext={toFa(value)} onKeyDown={onKeyDown}>
+          <span key={value} className={direction ? `stepper__digit stepper__digit--${direction}` : 'stepper__digit'}>
+            {toFa(value)}
+          </span>
+        </span>
+        <button type="button" className="stepper__btn" tabIndex={-1} aria-label={`زیاد کردن ${label}`}
+          disabled={value >= max} {...stepButton(1)}>
+          <PlusIcon width={18} height={18} />
+        </button>
       </span>
-    </label>
+    </div>
+  )
+}
+
+type Category = GameConfig['category']
+const CATEGORY_OPTIONS: { value: Category, label: string }[] = [
+  { value: 'all', label: 'همه' },
+  ...CATEGORIES.map((category) => ({ value: category, label: category })),
+]
+
+/** Chip radio group; arrow keys move between chips like a native radio set. */
+function CategoryPicker({ value, onChange }: { value: Category, onChange: (value: Category) => void }) {
+  const chips = useRef<(HTMLButtonElement | null)[]>([])
+
+  const select = (index: number) => {
+    const option = CATEGORY_OPTIONS[index]
+    chips.current[index]?.focus()
+    if (option.value === value) return
+    onChange(option.value)
+    cue('select')
+  }
+
+  const onKeyDown = (event: KeyboardEvent<HTMLButtonElement>, index: number) => {
+    const last = CATEGORY_OPTIONS.length - 1
+    // Next/previous follow reading order, which runs right-to-left here.
+    const moves: Record<string, number> = {
+      ArrowLeft: index === last ? 0 : index + 1, ArrowDown: index === last ? 0 : index + 1,
+      ArrowRight: index === 0 ? last : index - 1, ArrowUp: index === 0 ? last : index - 1,
+      Home: 0, End: last,
+    }
+    if (!(event.key in moves)) return
+    event.preventDefault()
+    select(moves[event.key])
+  }
+
+  return (
+    <div className="category-field">
+      <span id="category-label" className="category-field__label">موضوع کلمه‌ها</span>
+      <div className="chip-group" role="radiogroup" aria-labelledby="category-label">
+        {CATEGORY_OPTIONS.map((option, index) => {
+          const checked = option.value === value
+          return (
+            <button key={option.value} ref={(node) => { chips.current[index] = node }} type="button" role="radio"
+              className={`chip${checked ? ' chip--on' : ''}`} aria-checked={checked} tabIndex={checked ? 0 : -1}
+              onClick={() => select(index)} onKeyDown={(event) => onKeyDown(event, index)}>
+              {option.label}
+            </button>
+          )
+        })}
+      </div>
+    </div>
   )
 }
