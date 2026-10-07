@@ -492,24 +492,38 @@ test('gameplay artboards keep time, instructions, and primary actions readable a
     }
     await page.screenshot({ path: testInfo.outputPath(`${name}.png`), fullPage: true })
   }
-  for (const viewport of [{ width: 320, height: 568 }, { width: 360, height: 740 }, { width: 363, height: 692 }, { width: 390, height: 844 }, { width: 740, height: 360 }, { width: 1280, height: 800 }]) {
+  for (const viewport of [{ width: 320, height: 568 }, { width: 360, height: 740 }, { width: 363, height: 692 }, { width: 390, height: 844 }, { width: 430, height: 932 }, { width: 740, height: 360 }, { width: 1280, height: 800 }]) {
     await page.setViewportSize(viewport)
     await prepare(page, { minutes: 5 })
     const roles = await deal(page)
     const word = roles.find((role) => role !== 'جاسوس')!
     await capture(`ready-${viewport.width}`, 'شروع گفت‌وگو')
+    if (viewport.height >= 844) {
+      const watch = await page.locator('.stopwatch').boundingBox()
+      const meta = await page.locator('.play-meta').boundingBox()
+      expect(watch!.height).toBeGreaterThan(220)
+      expect((watch!.y + meta!.y + meta!.height) / 2).toBeGreaterThan(viewport.height * 0.4)
+    }
     await page.getByRole('button', { name: 'شروع گفت‌وگو' }).click()
     for (let count = 3; count >= 1; count--) {
       await expect(page.locator('.countdown')).toHaveText(toFa(count))
-      if (viewport.width === 363) {
+      if (viewport.width === 363 || viewport.height >= 844) {
         await expect(page.locator('.countdown')).toHaveCSS('transform', 'none')
-        await capture(`countdown-${count}`)
+        await capture(`countdown-${viewport.width}-${count}`)
+        if (viewport.height >= 844) {
+          const digit = await page.locator('.countdown').boundingBox()
+          expect(digit!.y).toBeGreaterThan(viewport.height * 0.45)
+        }
       }
       await page.clock.fastForward(1_000)
     }
     await expect(page.getByRole('timer')).toHaveText('۰۵:۰۰')
     await expect(page.locator('.timer-tools')).not.toHaveAttribute('open', '')
     await capture(`timer-${viewport.width}`, 'پایان گفت‌وگو')
+    if (viewport.height >= 844) {
+      const clock = await page.getByRole('timer').boundingBox()
+      expect(clock!.y).toBeGreaterThan(viewport.height * 0.4)
+    }
     const pause = await page.getByRole('button', { name: 'مکث بازی' }).boundingBox()
     expect(pause!.x + pause!.width).toBeLessThanOrEqual(viewport.width)
     await page.getByText('زمان و راهنما', { exact: true }).click()
@@ -539,7 +553,7 @@ test('gameplay artboards keep time, instructions, and primary actions readable a
 test('mobile, landscape, and desktop layouts have reachable actions and no horizontal overflow', async ({ page }, testInfo) => {
   const errors: string[] = []
   page.on('pageerror', (error) => errors.push(error.message))
-  for (const viewport of [{ width: 320, height: 568 }, { width: 360, height: 740 }, { width: 363, height: 692 }, { width: 390, height: 844 }, { width: 740, height: 360 }, { width: 1280, height: 800 }]) {
+  for (const viewport of [{ width: 320, height: 568 }, { width: 360, height: 740 }, { width: 363, height: 692 }, { width: 390, height: 844 }, { width: 430, height: 932 }, { width: 740, height: 360 }, { width: 1280, height: 800 }]) {
     await page.setViewportSize(viewport)
     await prepare(page, viewport.width === 363 ? { playerCount: 15, spyCount: 2, minutes: 5 } : {})
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true)
@@ -553,6 +567,12 @@ test('mobile, landscape, and desktop layouts have reachable actions and no horiz
     await page.getByRole('button', { name: 'دیدن کارت بازیکن ۱' }).click()
     await expect(page.locator('.secret-word')).toBeVisible()
     await expect(page.locator('.card')).toHaveCSS('transform', 'none')
+    if (viewport.height >= 844) {
+      const deck = await page.locator('.card-stack').boundingBox()
+      const progress = await page.locator('.reveal-progress').boundingBox()
+      expect(deck!.height).toBeGreaterThan(viewport.height * 0.7)
+      expect(progress!.y + progress!.height).toBeLessThanOrEqual(viewport.height)
+    }
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true)
     expect(await page.locator('.card').evaluate((card) => {
       const outer = card.getBoundingClientRect()

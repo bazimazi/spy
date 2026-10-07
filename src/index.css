@@ -134,20 +134,6 @@ button:disabled {
   background: rgba(255, 255, 255, 0.08);
 }
 
-.help-badge {
-  width: 28px;
-  height: 28px;
-  border-radius: 999px;
-  background: var(--c-primary);
-  color: var(--c-on-primary);
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: 700;
-  font-size: 16px;
-  line-height: 1;
-}
-
 /* Primary action button */
 .btn {
   display: flex;
@@ -782,11 +768,7 @@ button:focus-visible, summary:focus-visible, .role-list:focus-visible, .timer-to
 .home-screen .top-actions {
   top: calc(12px + env(safe-area-inset-top));
   right: 8px;
-}
-
-.home-screen .help-badge {
-  width: 24px;
-  height: 24px;
+  gap: 0;
 }
 
 .home-screen .settings {
@@ -819,7 +801,7 @@ button:focus-visible, summary:focus-visible, .role-list:focus-visible, .timer-to
   gap: 2px;
   flex-shrink: 0;
   padding: 3px;
-  border-radius: 999px;
+  border-radius: var(--radius-card);
   background: rgba(20, 12, 26, 0.55);
   box-shadow: inset 0 0 0 1px rgba(193, 187, 197, 0.18);
 }
@@ -830,7 +812,7 @@ button:focus-visible, summary:focus-visible, .role-list:focus-visible, .timer-to
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  border-radius: 50%;
+  border-radius: var(--radius-button);
   color: var(--c-primary);
   background: rgba(247, 166, 50, 0.1);
   touch-action: manipulation;
@@ -840,7 +822,7 @@ button:focus-visible, summary:focus-visible, .role-list:focus-visible, .timer-to
   transition: background-color 160ms ease, color 160ms ease, transform 120ms ease;
 }
 
-/* Extend the hit area to 44px without growing the visual pill. */
+/* Extend the hit area to 44px without growing the visible control. */
 .stepper__btn { position: relative; }
 .stepper__btn::after { content: ''; position: absolute; inset: -5px; }
 
@@ -1012,9 +994,9 @@ summary { cursor: pointer; min-height: 44px; display: list-item; padding: 8px 0;
 .reveal-screen::before, .play-screen::before { display: none; }
 .reveal-screen .content {
   padding-top: calc(88px + env(safe-area-inset-top));
+  justify-content: center;
 }
 .reveal-screen .top-actions, .play-screen .top-actions { top: calc(14px + env(safe-area-inset-top)); right: 8px; gap: 0; }
-.reveal-screen .help-badge { width: 24px; height: 24px; }
 .reveal-screen .icon-btn > svg, .play-screen .icon-btn > svg {
   width: 24px;
   height: 24px;
@@ -1026,6 +1008,8 @@ summary { cursor: pointer; min-height: 44px; display: list-item; padding: 8px 0;
 .reveal-deck { direction: ltr; }
 .reveal-screen .card-stack {
   width: min(366px, calc(100% + 38px), max(280px, calc((100dvh - 188px - env(safe-area-inset-top) - env(safe-area-inset-bottom)) * 366 / 508)));
+  height: clamp(389px, calc(100dvh - 188px - env(safe-area-inset-top) - env(safe-area-inset-bottom)), 700px);
+  aspect-ratio: auto;
   max-width: none;
   margin: 0;
 }
@@ -1088,7 +1072,7 @@ summary { cursor: pointer; min-height: 44px; display: list-item; padding: 8px 0;
 }
 .reveal-progress .round-progress { height: 3px; margin-top: 8px; }
 
-/* Main play artboards share a quiet, top-aligned focal area and bottom action.
+/* Main play artboards share a focal area and bottom action.
    Keep the designed motion enabled for every system/browser preference. */
 .play-screen .content {
   padding-top: calc(clamp(76px, calc(36dvh - 116px), 132px) + env(safe-area-inset-top));
@@ -1096,6 +1080,20 @@ summary { cursor: pointer; min-height: 44px; display: list-item; padding: 8px 0;
 }
 .play-focus { display: flex; flex-direction: column; align-items: center; text-align: center; }
 .play-screen .stopwatch { height: clamp(132px, calc(25dvh + 11px), 184px); }
+/* Use the space above the actions on taller phones instead of leaving it below
+   a fixed-size, top-aligned clock. Short screens can still scroll naturally. */
+.ready-screen .content, .countdown-screen .content, .timer-screen .content {
+  padding-top: calc(76px + env(safe-area-inset-top));
+  gap: clamp(16px, 3dvh, 28px);
+}
+.ready-screen .play-focus, .countdown-screen .play-focus, .timer-screen .play-focus {
+  flex: 1;
+  justify-content: center;
+}
+.ready-screen .stopwatch, .countdown-screen .stopwatch, .timer-screen .stopwatch {
+  width: clamp(104px, 22dvh, 204px);
+  height: clamp(132px, 28dvh, 260px);
+}
 .play-heading { margin-top: 28px; font-size: 24px; }
 .play-instruction { max-width: 300px; margin: 20px 0 0; font-size: 14px; color: var(--c-primary); }
 .play-note { margin: 12px 0 0; font-size: 13px; line-height: 1.8; color: var(--c-text-muted); }
@@ -1166,7 +1164,7 @@ summary { cursor: pointer; min-height: 44px; display: list-item; padding: 8px 0;
   max-height: clamp(104px, calc(100dvh - 448px - env(safe-area-inset-top) - env(safe-area-inset-bottom)), 280px);
   overflow-y: auto;
 }
-.timer-screen:has(.timer-tools[open]) .content { padding-top: calc(76px + env(safe-area-inset-top)); }
+.timer-screen:has(.timer-tools[open]) .content { padding-top: calc(76px + env(safe-area-inset-top)); gap: 0; }
 .timer-screen:has(.timer-tools[open]) .stopwatch { width: 100px; height: 96px; }
 .timer-screen:has(.timer-tools[open]) .timer-reading { margin-top: 16px; }
 .timer-screen:has(.timer-tools[open]) .timer-status { margin-top: 12px; }
@@ -1271,7 +1269,7 @@ summary { cursor: pointer; min-height: 44px; display: list-item; padding: 8px 0;
   0%, 100% { translate: 0 0; }
   50% { translate: 0 -4px; }
 }
-.home-screen .sound-toggle > svg {
+.home-screen .icon-btn > svg {
   width: 24px;
   height: 24px;
   padding: 4px;

@@ -1,7 +1,7 @@
 import { Screen } from '../components/Screen'
 import { Disclosure } from '../components/Disclosure'
 import { useEffect, useRef, type KeyboardEvent, type MouseEvent, type PointerEvent, type ReactNode } from 'react'
-import { CheckIcon, ClockIcon, MinusIcon, PlayersIcon, PlusIcon, SoundOffIcon, SoundOnIcon, SpyIcon, UsersIcon } from '../components/Icons'
+import { CheckIcon, ClockIcon, HelpIcon, MinusIcon, PlayersIcon, PlusIcon, SoundOffIcon, SoundOnIcon, SpyIcon, UsersIcon } from '../components/Icons'
 import type { GameConfig } from '../game/types'
 import { toFa } from '../game/logic'
 import { CATEGORIES, getWordPool } from '../game/words'
@@ -38,7 +38,7 @@ export function HomeScreen({ config, setConfig, onStart, onOpenGuide, onOpenPlay
       className={`home-screen${optionsOpen ? ' home-screen--options-open' : ''}`}
       topActions={<>
         <button type="button" className="icon-btn" aria-label="راهنمای بازی" onClick={onOpenGuide}>
-          <span className="help-badge" aria-hidden>?</span>
+          <HelpIcon />
         </button>
         <button type="button" className="icon-btn sound-toggle" aria-label="صدای بازی" aria-pressed={config.sound}
           onClick={() => setConfig({ sound: !config.sound })}>

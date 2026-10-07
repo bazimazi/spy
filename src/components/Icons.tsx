@@ -51,8 +51,17 @@ function SettingIcon({ className, children, ...rest }: IconProps) {
 
 export function HomeIcon(props: IconProps) {
   return (
-    <svg {...baseProps} {...props}>
+    <svg {...baseProps} fill="currentColor" stroke="none" {...props}>
       <path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z" />
+    </svg>
+  )
+}
+
+export function HelpIcon(props: IconProps) {
+  return (
+    <svg {...baseProps} fill="currentColor" stroke="none" {...props}>
+      <path d="M12 3a5 5 0 0 0-5 5h2.5a2.5 2.5 0 0 1 5 0c0 1-.5 1.5-1.6 2.3-1.3.9-2.15 1.9-2.15 3.7v1h2.5v-1c0-.9.35-1.3 1.2-1.9C15.9 11 17 9.8 17 8a5 5 0 0 0-5-5Z" />
+      <circle cx="12" cy="18.5" r="1.5" />
     </svg>
   )
 }

@@ -3,6 +3,7 @@ import type { AnimationEvent } from 'react'
 import { Screen } from '../components/Screen'
 import { Card } from '../components/Card'
 import { RoundExitButton } from '../components/RoundExitButton'
+import { HelpIcon } from '../components/Icons'
 import { GuideScreen } from './GuideScreen'
 import { playerName, toFa } from '../game/logic'
 import type { GameConfig, RoundState } from '../game/types'
@@ -87,7 +88,7 @@ export function RevealScreen({ config, round, playerIndex, onNext, onHome }: Rev
     <Screen className="reveal-screen" topActions={<>
       <button type="button" className="icon-btn" aria-label="راهنمای بازی"
         onClick={() => { setPhase('back'); setGuideOpen(true) }}>
-        <span className="help-badge" aria-hidden>?</span>
+        <HelpIcon />
       </button>
       <RoundExitButton onExit={onHome} onRequest={() => setPhase((current) => current === 'leaving' ? current : 'back')} />
     </>}>
