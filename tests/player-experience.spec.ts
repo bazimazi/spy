@@ -178,7 +178,7 @@ test('reveal handoffs remove secrets immediately and never start the timer autom
   await expect(page.getByRole('heading', { name: 'همه آماده‌اید؟' })).toBeFocused()
   await expect(page.getByRole('timer')).toHaveCount(0)
   const stored = await page.evaluate((key) => JSON.parse(localStorage.getItem(key)!), PREFERENCES_KEY)
-  expect(Object.keys(stored).sort()).toEqual(['category', 'minutes', 'names', 'playerCount', 'sound', 'spyCount', 'spyGuide', 'vibration'])
+  expect(Object.keys(stored).sort()).toEqual(['category', 'guessMode', 'minutes', 'names', 'playerCount', 'sound', 'spyCount', 'spyGuide', 'vibration'])
 })
 
 test('switching away conceals a revealed card without skipping its owner', async ({ page }) => {
@@ -353,6 +353,7 @@ test('time expiry catches up after a delayed callback and keeps secrets hidden',
   await expect(page.getByText(word, { exact: true })).toHaveCount(0)
   await expect(page.locator('.end-reveal')).toHaveCount(0)
   await page.getByRole('button', { name: 'نمایش کلمه و نقش‌ها' }).click()
+  await page.getByRole('button', { name: 'نمایش رازها و پایان دور' }).click()
   await expect(page.locator('.end-reveal__value').last()).toHaveText(word)
   await page.getByText('نقش همه‌ی بازیکن‌ها').click()
   await expect(page.locator('.role-row')).toHaveCount(3)
@@ -441,6 +442,7 @@ test('core screens pass automated accessibility checks', async ({ page }, testIn
   await page.getByRole('button', { name: 'بریم برای تصمیم نهایی' }).click()
   await check('resolution')
   await page.getByRole('button', { name: 'نمایش کلمه و نقش‌ها' }).click()
+  await page.getByRole('button', { name: 'نمایش رازها و پایان دور' }).click()
   await check('end')
   await page.getByText('نقش همه‌ی بازیکن‌ها').click()
   await check('end-roles')
@@ -544,6 +546,7 @@ test('gameplay artboards keep time, instructions, and primary actions readable a
     await expect(page.getByText(word, { exact: true })).toHaveCount(0)
     await capture(`decision-${viewport.width}`, 'نمایش کلمه و نقش‌ها')
     await page.getByRole('button', { name: 'نمایش کلمه و نقش‌ها' }).click()
+    await page.getByRole('button', { name: 'نمایش رازها و پایان دور' }).click()
     await expect(page.locator('.end-reveal__value').last()).toHaveText(word)
     await expect(page.locator('.all-roles')).not.toHaveAttribute('open', '')
     await capture(`result-${viewport.width}`, 'دوباره بزن بریم!')
@@ -672,6 +675,7 @@ test('the in-app vote, last-chance guess, and scoreboard decide and record each 
   await axe(page)
   await page.screenshot({ path: testInfo.outputPath('guess.png'), fullPage: true })
   await page.getByRole('button', { name: 'ثبت حدس' }).click()
+  await page.getByRole('button', { name: 'ثبت حدس نهایی' }).click()
 
   await expect(page.getByText('شهروندها بردند!')).toBeVisible()
   await expect(page.locator('.end-reveal__value').last()).toHaveText(word)
@@ -719,6 +723,7 @@ test('a spy can stop the discussion to guess, and a right guess wins the bonus',
   await expect(page.getByRole('heading', { name: 'جاسوس، کلمه چیه؟' })).toBeFocused()
   await page.getByRole('button', { name: word, exact: true }).click()
   await page.getByRole('button', { name: 'ثبت حدس' }).click()
+  await page.getByRole('button', { name: 'ثبت حدس نهایی' }).click()
   await expect(page.getByText('جاسوس‌ها بردند!')).toBeVisible()
   await expect(page.getByText('وسط گفت‌وگو کلمه رو درست حدس زد')).toBeVisible()
   await page.getByText('نقش همه‌ی بازیکن‌ها').click()

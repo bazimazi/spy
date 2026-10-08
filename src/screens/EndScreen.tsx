@@ -3,7 +3,7 @@ import type { CSSProperties } from 'react'
 import { GameplayScreen } from '../components/GameplayScreen'
 import { Confetti } from '../components/Confetti'
 import { Disclosure } from '../components/Disclosure'
-import { playerName, toFa } from '../game/logic'
+import { isCorrectGuess, playerName, toFa } from '../game/logic'
 import { cue } from '../game/feedback'
 import type { GameConfig, OutcomeReason, RoundOutcome, RoundState, SessionScore } from '../game/types'
 import spyHeroSrc from '../assets/logo.svg'
@@ -59,7 +59,7 @@ export function EndScreen({ config, round, outcome, score, roundNumber, onPlayAg
             کلمه: <strong className="end-reveal__value">{round.word.word}</strong>
           </p>
           {outcome?.guess && <p className="end-reveal end-reveal--guess" style={{ '--i': 2 } as CSSProperties}>
-            حدس جاسوس: <strong className={outcome.guess === round.word.word ? 'is-right' : 'is-wrong'}>{outcome.guess}</strong>
+            حدس جاسوس: <strong className={isCorrectGuess(outcome.guess, round.word.word) ? 'is-right' : 'is-wrong'}>{outcome.guess}</strong>
           </p>}
         </div>
         {scored && <p className="end-tally">

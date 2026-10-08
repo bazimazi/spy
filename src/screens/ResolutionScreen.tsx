@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { GameplayScreen } from '../components/GameplayScreen'
+import { ConfirmDialog } from '../components/ConfirmDialog'
 import { playerName, toFa } from '../game/logic'
 import { cue } from '../game/feedback'
 import type { GameConfig } from '../game/types'
@@ -17,6 +18,7 @@ interface ResolutionScreenProps {
 /** The group agrees on as many suspects as there are spies, then the app judges the vote. */
 export function ResolutionScreen({ config, timedOut, onAccuse, onReveal, onHome }: ResolutionScreenProps) {
   const [accused, setAccused] = useState<number[]>([])
+  const [confirmingReveal, setConfirmingReveal] = useState(false)
   const needed = config.spyCount
   const ready = accused.length === needed
 
@@ -50,7 +52,11 @@ export function ResolutionScreen({ config, timedOut, onAccuse, onReveal, onHome 
       <button type="button" className="btn" disabled={!ready} data-cue="none" onClick={() => onAccuse(accused)}>
         {ready ? 'رأی نهایی' : `رأی نهایی (${toFa(accused.length)} از ${toFa(needed)})`}
       </button>
-      <button type="button" className="text-btn" onClick={onReveal}>نمایش کلمه و نقش‌ها</button>
+      <button type="button" className="text-btn" onClick={() => setConfirmingReveal(true)}>نمایش کلمه و نقش‌ها</button>
     </div>
+    {confirmingReveal && <ConfirmDialog title="رازهای این دور رو نمایش بدیم؟"
+      description="با نمایش کلمه و نقش‌ها، این دور بدون رأی و بدون امتیاز تمام می‌شه. بعد از دیدن رازها نمی‌شه به رأی‌گیری برگشت."
+      confirmLabel="نمایش رازها و پایان دور" cancelLabel="برگشت به رأی‌گیری"
+      onCancel={() => setConfirmingReveal(false)} onConfirm={onReveal} />}
   </GameplayScreen>
 }

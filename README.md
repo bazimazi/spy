@@ -83,13 +83,15 @@ and transitions remain enabled. Future contributors should also follow
 `Home → (optional) Guide / Names → Reveal × N → Ready → Countdown 3-2-1 → Timer → Vote → Verdict → (Spy's guess) → End`
 
 A spy can also stop the timer to guess early: `Timer → Spy's guess → End`.
-The vote can be skipped with “نمایش کلمه و نقش‌ها”, which goes straight to
-the reveal and leaves the result to the group, as in earlier versions.
+The vote can be skipped with “نمایش کلمه و نقش‌ها”. A confirmation explains
+that this ends the round without points, then reveals the secrets and leaves
+the result to the group.
 
 - **Home** - choose 3-30 players, 1-8 spies (fewer than players), 1-30 minutes,
-  a word category, and the optional spy hint. The three main settings use
-  dropdowns matching the original design; category, hint, player names, and
-  vibration are under “تنظیمات بیشتر”, and sound is a top-corner toggle.
+  a word category, the optional spy hint, and classic or challenge guessing.
+  The three main settings use compact hold-to-repeat steppers; category, hint,
+  guessing mode, player names, and vibration are under “تنظیمات بیشتر”, and
+  sound is a top-corner toggle.
   Valid preferences survive reloads.
 - **Names** - optional names by seat (16 characters). Blank seats stay
   «بازیکن N». Names appear on cards, the vote, the verdict, and the scoreboard.
@@ -115,14 +117,22 @@ the reveal and leaves the result to the group, as in earlier versions.
   and a status message mark the final ten seconds, with a ticking sound, a red
   pulsing vignette, and a fuse bar that burns down under the time. Home
   confirmations pause time; cancelling restores the previous running or paused
-  state.
+  state. Public question help draws from 18 shuffled, category-neutral prompts,
+  with no repeats until the deck is exhausted and no immediate repeat when it
+  resets. Folding the panel keeps the current prompt; requesting another never
+  pauses the clock.
 - **Vote** - both time expiry and early completion leave secrets hidden. The
   group agrees on as many suspects as there are spies; with a full ballot a new
   pick replaces the oldest.
 - **Verdict** - a drumroll, then each suspect's card turns over and the result
   is stamped. Accusing any citizen ends the round for the spies. Catching every
   spy gives them a last chance to guess the word.
-- **Spy's guess** - the word among seven decoys from its own category.
+- **Spy's guess** - classic play offers the word among seven decoys from its
+  own category. Optional “چالش حرفه‌ای” instead asks the spy to write the word
+  without showing any candidates or the category. Persian/Arabic ی and ک,
+  diacritics, tatweel, and spacing differences are accepted; synonyms, partial
+  answers, and multiple guesses are not. Both modes show the chosen answer in
+  a confirmation before the single final submission; cancelling preserves it.
 - **End** - a winner banner with confetti, the reason, the portrait, spies,
   word, and the spy's guess. The team tally and a scrollable,
   keyboard-accessible list of roles and points are available on demand. One
@@ -208,8 +218,8 @@ its word history; only preferences (including names and sound settings)
 persist, and the session scoreboard stays in memory. The app records the
 group's agreed vote; how the group reaches it is up to them. Real iOS/Android screen-lock behavior, screen readers,
 and social balance still need device and group playtesting. Browsers may deny
-wake locks. Gameplay needs no server once loaded, but offline reload/install
-support is not implemented.
+wake locks. Gameplay needs no server once loaded; the PWA precaches the app
+and supports offline reload after the service worker is ready.
 
 The next useful research is three Persian-speaking groups (new and experienced
 players, 3-8 people), playing several rounds each. Record setup time, requests
@@ -219,6 +229,52 @@ values feel fair, whether groups use the early spy guess, and whether sound
 helps or distracts. Use that evidence to prioritize difficulty-tuned word sets
 and scoring changes. Large groups are technically supported; their pacing
 has not been validated with players.
+
+## Gameplay review (2026-10-08)
+
+The follow-up review audited the round state, winning conditions, scoring,
+guess UI, preferences, and public help, and ran the existing 37-test browser
+suite before making changes. All baseline tests passed. The visual identity,
+private pass-the-phone cards, random roles, word pools, scoring values, and
+designed motion remain the foundation.
+
+The [publisher's Spyfall overview](https://hobbyworldint.com/portfolio-item/spyfall/)
+emphasizes free questions, listening, bluffing, and an early spy guess. These
+are useful design anchors, rather than a claim that this multiple-spy,
+word-based variant implements those rules. The
+[Undercover developer's rules](https://www.yanstarstudio.com/undercover-how-to-play)
+also distinguish private words, discussion, and a final guess. The conclusions
+below come from this app's code and UI; balance and enjoyment still need group
+playtesting.
+
+| Finding | Update | Why it matters |
+| --- | --- | --- |
+| Eight candidates give a blind guess a calculated 1-in-8 (12.5%) success chance and expose the word's category, even with spy hints off. | Optional challenge mode removes all candidates and asks for the word. Existing preferences migrate to classic; the choice persists and appears before discussion starts. | Experienced groups can demand stronger deduction while newcomers keep the familiar game. This is a difficulty option, not a proven balance correction. |
+| Public help repeats the same three questions. | 18 shuffled prompts, with explicit next-question control and no repeats within a deck. Every prompt is independent of the secret and category. | Helps a stalled conversation without disclosing extra clues or making the phone manage every spoken turn. |
+| A single tap can expose all secrets or commit the spy's only guess. | Review the guess before submitting, or confirm ending an unscored round before revealing secrets. Cancellation retains the answer or ballot and restores focus. | Protects the group's investment in the round without adding delays to normal card handoffs. |
+| The accusation helper accepts partial or duplicate spy selections as a catch. | Require exactly the configured number of distinct spy seats. | Keeps the game rules valid outside the current UI's constraints too. |
+| Repeated outcome callbacks can accumulate points twice. | Guard final scoring once per round, and guard guess submission. | Prevents repeated input from changing a settled score. |
+
+Additional regression coverage exercises preference migration, both challenge
+outcomes, keyboard-equivalent Persian answers, strict rejection of partial and
+multiple guesses, blank-input handling, cancellation and focus, secret privacy,
+non-repeating prompt cycles, running time during help, and repeated submission.
+The new screens and dialogs receive axe checks and captures at phone,
+landscape, and desktop sizes. The full suite retains offline, timer, handoff,
+scoring, and motion-policy checks.
+
+### Next evidence needed
+
+Playtest classic and challenge with at least three Persian-speaking groups,
+including beginners and experienced players, over several rounds. Record how
+often guesses are informed versus random, team win rates by group size and
+mode, time before the first question, repeated requests for help, mistaken
+reveals, disputed typed answers, and voluntary rematches. In particular,
+challenge mode changes spy difficulty while keeping scoring unchanged; use
+the observed results before changing points or recommended role counts.
+Large groups and physical iOS/Android keyboards still need device testing.
+Synonyms are intentionally not guessed by the software; the UI explains that
+the exact word is required. Session scores and live rounds remain in memory.
 
 ## Project layout
 

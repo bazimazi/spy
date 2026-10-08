@@ -29,6 +29,7 @@ export default function App() {
   const [homeOptionsOpen, setHomeOptionsOpen] = useState(false)
   const [validationError, setValidationError] = useState<string | null>(null)
   const wordHistory = useRef<string[]>([])
+  const roundScored = useRef(false)
 
   useEffect(() => savePreferences(config), [config])
   useEffect(() => setFeedbackPreferences(config), [config])
@@ -71,6 +72,7 @@ export default function App() {
     setTimedOut(false)
     setAccused([])
     setOutcome(null)
+    roundScored.current = false
     // Points follow seats, so a different table size starts a fresh scoreboard.
     setScore((s) => s.points.length === config.playerCount ? s : emptyScore(config.playerCount))
     setScreen('reveal')
@@ -89,7 +91,8 @@ export default function App() {
   }, [])
 
   const finishRound = (result: RoundOutcome) => {
-    if (!round) return
+    if (!round || roundScored.current) return
+    roundScored.current = true
     const delta = scoreRound(round, result, config.playerCount)
     setOutcome(result)
     setScore((s) => addRoundScore(s, delta, result.winner))

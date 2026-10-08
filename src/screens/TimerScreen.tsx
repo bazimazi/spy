@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, type CSSProperties } from 'react'
 import { GameplayScreen } from '../components/GameplayScreen'
 import { ConfirmDialog } from '../components/ConfirmDialog'
 import { Disclosure } from '../components/Disclosure'
+import { QuestionPrompt } from '../components/QuestionPrompt'
 import { PauseIcon, PlayIcon } from '../components/Icons'
 import { formatTime } from '../game/logic'
 import { cue } from '../game/feedback'
@@ -90,13 +91,7 @@ export function TimerScreen({ totalSeconds, onFinish, onSpyGuess, onHome }: Time
                 setConfirming('guess')
               }}>جاسوسم؛ کلمه رو حدس می‌زنم</button>
               <p className="play-note">حدس درست وسط بازی ۳ امتیاز داره؛ حدس غلط یعنی باخت جاسوس‌ها.</p>
-              <p className="timer-tools__title">برای سؤال بعدی:</p>
-              <ul>
-                <li>«چه وقت‌هایی باهاش سر و کار داری؟»</li>
-                <li>«چه چیزی درباره‌ش دوست داری؟»</li>
-                <li>«یاد چه خاطره‌ای می‌افتی؟»</li>
-              </ul>
-              <p className="play-note">خود کلمه، تعداد حرف‌ها و بخش‌هاش رو نگویید.</p>
+              <QuestionPrompt />
             </div>
           </Disclosure>
           <img className="play-spy" src={spyHeroSrc} alt="" aria-hidden
