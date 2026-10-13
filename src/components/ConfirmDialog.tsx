@@ -5,11 +5,12 @@ interface ConfirmDialogProps {
   title: string
   description: string
   confirmLabel: string
+  cancelLabel?: string
   onConfirm: () => void
   onCancel: () => void
 }
 
-export function ConfirmDialog({ title, description, confirmLabel, onConfirm, onCancel }: ConfirmDialogProps) {
+export function ConfirmDialog({ title, description, confirmLabel, cancelLabel = 'ادامه‌ی بازی', onConfirm, onCancel }: ConfirmDialogProps) {
   const ref = useRef<HTMLDialogElement>(null)
   const returnFocus = useRef(document.activeElement as HTMLElement | null)
   const unmounting = useRef(false)
@@ -33,7 +34,7 @@ export function ConfirmDialog({ title, description, confirmLabel, onConfirm, onC
       <h2 id="confirm-title">{title}</h2>
       <p id="confirm-description">{description}</p>
       <div className="stack">
-        <button type="button" className="btn" autoFocus onClick={onCancel}>ادامه‌ی بازی</button>
+        <button type="button" className="btn" autoFocus onClick={onCancel}>{cancelLabel}</button>
         <button type="button" className="btn btn--ghost" onClick={onConfirm}>{confirmLabel}</button>
       </div>
     </dialog>

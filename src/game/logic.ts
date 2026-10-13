@@ -3,7 +3,7 @@ import { CATEGORIES, getWordPool } from './words'
 
 export const MAX_NAME_LENGTH = 16
 
-function shuffle<T>(items: readonly T[]): T[] {
+export function shuffle<T>(items: readonly T[]): T[] {
   const arr = [...items]
   for (let i = arr.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1))
@@ -57,6 +57,7 @@ export function validateConfig(c: GameConfig): string | null {
   if (c.minutes < 1 || c.minutes > 30) return 'زمان بین ۱ تا ۳۰ دقیقه.'
   if (typeof c.spyGuide !== 'boolean') return 'تنظیم راهنمای جاسوس نامعتبر است.'
   if (c.category !== 'all' && !CATEGORIES.includes(c.category)) return 'موضوع نامعتبر است.'
+  if (c.guessMode !== 'classic' && c.guessMode !== 'challenge') return 'روش حدس نامعتبر است.'
   if (!Array.isArray(c.names) || c.names.length > 30
     || !c.names.every((name) => typeof name === 'string' && name.length <= MAX_NAME_LENGTH)) {
     return 'نام بازیکن‌ها نامعتبر است.'
@@ -80,12 +81,29 @@ export function guessOptions(word: SecretWord, count = 8): string[] {
 
 /** Accusing any citizen ends the round for the spies; catching all spies earns them a last guess. */
 export function judgeAccusation(round: RoundState, accused: readonly number[]): 'caught' | 'wrong-accusation' {
-  return accused.every((seat) => round.spyIndices.includes(seat)) ? 'caught' : 'wrong-accusation'
+  return accused.length === round.spyIndices.length
+    && new Set(accused).size === accused.length
+    && accused.every((seat) => Number.isInteger(seat) && round.spyIndices.includes(seat))
+    ? 'caught' : 'wrong-accusation'
+}
+
+/** Accept Persian/Arabic keyboard variants and spacing, without fuzzy or partial matches. */
+export function normalizeGuess(value: string): string {
+  return value.normalize('NFKC')
+    .replace(/[يى]/g, 'ی')
+    .replace(/ك/g, 'ک')
+    .replace(/[\p{M}\s\u200c\u200d\u0640]/gu, '')
+    .toLocaleLowerCase('fa')
+}
+
+export function isCorrectGuess(guess: string, word: string): boolean {
+  const normalized = normalizeGuess(guess)
+  return normalized.length > 0 && normalized === normalizeGuess(word)
 }
 
 export function resolveRound(round: RoundState, accused: readonly number[], guess?: string): RoundOutcome {
   const early = accused.length === 0
-  const correct = guess === round.word.word
+  const correct = guess !== undefined && isCorrectGuess(guess, round.word.word)
   let reason: OutcomeReason
   if (early) reason = correct ? 'early-guess' : 'early-miss'
   else if (judgeAccusation(round, accused) === 'wrong-accusation') reason = 'wrong-accusation'

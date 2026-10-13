@@ -7,6 +7,7 @@ export const DEFAULT_CONFIG: GameConfig = {
   minutes: 5,
   spyGuide: false,
   category: 'all',
+  guessMode: 'classic',
   names: [],
   sound: true,
   vibration: true,
@@ -28,9 +29,9 @@ export function readPreferences(): GameConfig {
 export function savePreferences(config: GameConfig) {
   try {
     // Explicit allowlist: roles and secret words never go into browser storage.
-    const { playerCount, spyCount, minutes, spyGuide, category, names, sound, vibration } = config
+    const { playerCount, spyCount, minutes, spyGuide, category, guessMode, names, sound, vibration } = config
     localStorage.setItem(PREFERENCES_KEY, JSON.stringify({
-      playerCount, spyCount, minutes, spyGuide, category, names, sound, vibration,
+      playerCount, spyCount, minutes, spyGuide, category, guessMode, names, sound, vibration,
     }))
   } catch {
     // Private browsing and denied storage must not interrupt a game.

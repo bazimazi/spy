@@ -1,5 +1,6 @@
 import { test, expect } from '@playwright/test'
-import { addRoundScore, createRound, emptyScore, formatTime, guessOptions, playerName, resolveRound, scoreRound, validateConfig } from '../src/game/logic'
+import { addRoundScore, createRound, emptyScore, formatTime, guessOptions, isCorrectGuess, judgeAccusation, normalizeGuess, playerName, resolveRound, scoreRound, validateConfig } from '../src/game/logic'
+import { createQuestionDeck, QUESTION_PROMPTS } from '../src/game/questions'
 import { DEFAULT_CONFIG } from '../src/game/preferences'
 import { CATEGORIES, getWordPool, VOCAB } from '../src/game/words'
 
@@ -122,4 +123,40 @@ test('player names fall back to seat numbers and invalid settings are rejected',
   expect(validateConfig({ ...DEFAULT_CONFIG, names: ['x'.repeat(17)] })).not.toBeNull()
   expect(validateConfig({ ...DEFAULT_CONFIG, names: [3 as unknown as string] })).not.toBeNull()
   expect(validateConfig({ ...DEFAULT_CONFIG, sound: 'yes' as unknown as boolean })).not.toBeNull()
+})
+
+test('free guesses accept keyboard variants but reject partial answers and extra guesses', () => {
+  for (const guess of ['کتابخانه', 'كتابخانه', ' کِتاب خانه ', 'کتاب‌خانه', 'کـتابخانه']) {
+    expect(isCorrectGuess(guess, 'کتابخانه')).toBe(true)
+  }
+  expect(isCorrectGuess('اسكي', 'اسکی')).toBe(true)
+  for (const guess of ['', '  ‌', 'کتاب', 'کتابخانه یا مدرسه', 'مدرسه']) {
+    expect(isCorrectGuess(guess, 'کتابخانه')).toBe(false)
+  }
+  expect(normalizeGuess('  ‌')).toBe('')
+  const round = { ...createRound(DEFAULT_CONFIG), word: { word: 'کتابخانه', category: 'مکان' as const } }
+  expect(resolveRound(round, [], 'كتاب خانه')).toMatchObject({ winner: 'spies', reason: 'early-guess' })
+  expect(resolveRound(round, round.spyIndices, 'كتاب خانه')).toMatchObject({ winner: 'spies', reason: 'last-guess' })
+  expect(validateConfig({ ...DEFAULT_CONFIG, guessMode: 'challenge' })).toBeNull()
+  expect(validateConfig({ ...DEFAULT_CONFIG, guessMode: 'invalid' as 'classic' })).not.toBeNull()
+})
+
+test('only a complete ballot of distinct spy seats counts as a catch', () => {
+  const round = { ...createRound(DEFAULT_CONFIG), spyIndices: [1, 3] }
+  expect(judgeAccusation(round, [3, 1])).toBe('caught')
+  for (const accused of [[], [1], [1, 1], [1, 3, 3], [1, 2], [-1, 3], [1.5, 3], [NaN, 3]]) {
+    expect(judgeAccusation(round, accused)).toBe('wrong-accusation')
+  }
+})
+
+test('question decks exhaust distinct prompts and never repeat across the boundary', () => {
+  let previous: string | undefined
+  for (let cycle = 0; cycle < 50; cycle++) {
+    const deck = createQuestionDeck(previous)
+    expect(deck).toHaveLength(18)
+    expect(new Set(deck).size).toBe(18)
+    expect(new Set(deck)).toEqual(new Set(QUESTION_PROMPTS))
+    expect(deck[0]).not.toBe(previous)
+    previous = deck.at(-1)
+  }
 })

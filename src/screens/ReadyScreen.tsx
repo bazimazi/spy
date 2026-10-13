@@ -33,7 +33,7 @@ export function ReadyScreen({ config, round, roundNumber, onStart, onHome }: {
         </span>
       </p>
       <p className="play-note">گوشی رو وسط جمع بذارید و هر وقت آماده بودید شروع کنید.</p>
-      <p className="play-meta">دور {toFa(roundNumber)} · {toFa(config.minutes)} دقیقه</p>
+      <p className="play-meta">دور {toFa(roundNumber)} · {toFa(config.minutes)} دقیقه · {config.guessMode === 'challenge' ? 'چالش حرفه‌ای' : 'کلاسیک'}</p>
     </div>
     <div className="footer-actions"><button type="button" className="btn btn--glow" onClick={onStart}>شروع گفت‌وگو</button></div>
   </GameplayScreen>

@@ -23,6 +23,8 @@ export interface GameConfig {
   /** Whether spies see the category as a hint. */
   spyGuide: boolean
   category: WordCategory | 'all'
+  /** Classic offers eight choices; challenge asks the spy to write the word. */
+  guessMode: 'classic' | 'challenge'
   /** Optional names by seat; blank entries fall back to «بازیکن N». */
   names: string[]
   /** Synthesized sound effects. */

@@ -61,9 +61,10 @@ export function HomeScreen({ config, setConfig, onStart, onOpenGuide, onOpenPlay
 
         <Disclosure className="home-options" open={optionsOpen} onOpenChange={onOptionsToggle} summary={<>
           تنظیمات بیشتر
-          {(config.category !== 'all' || config.spyGuide) && (
+          {(config.category !== 'all' || config.spyGuide || config.guessMode === 'challenge') && (
             <span className="home-options__active">
-              {[config.category !== 'all' ? config.category : null, config.spyGuide ? 'راهنمای جاسوس' : null]
+              {[config.category !== 'all' ? config.category : null, config.spyGuide ? 'راهنمای جاسوس' : null,
+                config.guessMode === 'challenge' ? 'چالش حرفه‌ای' : null]
                 .filter(Boolean).join(' · ')}
             </span>
           )}
@@ -71,6 +72,16 @@ export function HomeScreen({ config, setConfig, onStart, onOpenGuide, onOpenPlay
           <div className="home-options__panel">
             <CategoryPicker value={config.category} onChange={(category) => setConfig({ category })} />
             <p className="setting-note">{toFa(getWordPool(config.category).length)} کلمه؛ در این جلسه بدون تکرار تا پایان مجموعه.</p>
+            <button type="button" className="spy-guide-row" role="switch" aria-checked={config.guessMode === 'challenge'}
+              aria-describedby="guess-mode-description" onClick={() => setConfig({ guessMode: config.guessMode === 'classic' ? 'challenge' : 'classic' })}>
+              <span className="toggle-copy">
+                <strong>چالش حرفه‌ای</strong>
+                <span id="guess-mode-description">روشن: جاسوس کلمه رو می‌نویسه. خاموش: از ۸ گزینه انتخاب می‌کنه.</span>
+              </span>
+              <span className={`toggle ${config.guessMode === 'challenge' ? 'toggle--on' : ''}`} aria-hidden>
+                {config.guessMode === 'challenge' ? <CheckIcon width={16} height={16} /> : null}
+              </span>
+            </button>
             <button type="button" className="spy-guide-row" onClick={onOpenPlayers}>
               <span className="toggle-copy">
                 <strong>نام بازیکن‌ها</strong>
