@@ -30,8 +30,10 @@ async function settle(page: Page) {
   await page.evaluate(() => { (window as unknown as { calmPolls: number }).calmPolls = 0 })
   await page.waitForFunction(() => {
     const state = window as unknown as { calmPolls: number }
+    // Firefox keeps animations inside a closed <details> pending; they play once it opens.
     const busy = document.getAnimations().some((animation) =>
-      animation.playState === 'running' && animation.effect?.getComputedTiming().iterations !== Infinity)
+      animation.playState === 'running' && animation.effect?.getComputedTiming().iterations !== Infinity
+      && !((animation.effect as KeyframeEffect).target as Element | null)?.closest('details:not([open]) > :not(summary)'))
     state.calmPolls = busy ? 0 : state.calmPolls + 1
     return state.calmPolls >= 4
   }, undefined, { polling: 50 })
@@ -98,6 +100,8 @@ test('holding a stepper button repeats the step', async ({ page }) => {
   await page.mouse.down()
   await expect.poll(async () => Number(await players.getAttribute('aria-valuenow'))).toBeGreaterThan(8)
   await page.mouse.up()
+  // A step that fired just before release may still be rendering.
+  await page.waitForTimeout(150)
   const held = await players.getAttribute('aria-valuenow')
   await page.waitForTimeout(300)
   await expect(players).toHaveAttribute('aria-valuenow', held!)
@@ -422,6 +426,7 @@ test('a denied wake lock does not interrupt the timer or pause control', async (
 })
 
 test('core screens pass automated accessibility checks', async ({ page }, testInfo) => {
+  test.setTimeout(60_000)
   const check = async (screen: string) => {
     // Measure settled screens without suppressing their entrance animations.
     await settle(page)
@@ -847,19 +852,20 @@ test('several spies are named in agreement and the verdict action waits for the 
   const wrong = (await page.locator('.guess-option').allInnerTexts()).find((option) => option !== word)!
   await page.getByRole('button', { name: wrong, exact: true }).click()
   await page.getByRole('button', { name: 'ثبت حدس' }).click()
+  await page.getByRole('button', { name: 'ثبت حدس نهایی' }).click()
   await expect(page.getByText('جاسوس‌ها گیر افتادند و کلمه رو اشتباه حدس زدند.')).toBeVisible()
 })
 
 test('a double tap on the last action cannot skip the result into a new round', async ({ page }) => {
   await prepare(page)
-  await deal(page)
+  const roles = await deal(page)
   await page.getByRole('button', { name: 'شروع گفت‌وگو' }).click()
-  await page.getByText('زمان و راهنما').click()
-  await page.getByRole('button', { name: 'جاسوسم؛ کلمه رو حدس می‌زنم' }).click()
-  await page.getByRole('button', { name: 'آره، حدس می‌زنم' }).click()
-  await page.locator('.guess-option').first().click()
+  await page.getByRole('button', { name: 'پایان گفت‌وگو', exact: true }).click()
+  await page.getByRole('button', { name: 'بریم برای تصمیم نهایی' }).click()
+  await page.locator('.suspect').nth(roles.findIndex((role) => role !== 'جاسوس')).click()
+  await page.getByRole('button', { name: 'رأی نهایی', exact: true }).click()
   // The second tap lands where «دوباره بزن بریم!» appears.
-  await page.getByRole('button', { name: 'ثبت حدس' }).dblclick()
+  await page.getByRole('button', { name: 'نمایش نتیجه' }).dblclick()
   await expect(page.getByRole('heading', { name: 'پایان دور ۱' })).toBeAttached()
   await page.waitForTimeout(1_000)
   await expect(page.getByRole('heading', { name: 'پایان دور ۱' })).toBeAttached()

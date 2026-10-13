@@ -74,7 +74,7 @@ export function EndScreen({ config, round, outcome, score, roundNumber, onPlayAg
             کلمه: <strong className="end-reveal__value">{round.word.word}</strong>
           </p>
           {outcome?.guess && <p className="end-reveal end-reveal--guess" style={{ '--i': 2 } as CSSProperties}>
-            حدس جاسوس: <strong className={isCorrectGuess(outcome.guess, round.word.word) ? 'is-right' : 'is-wrong'}>{outcome.guess}</strong>
+            حدس جاسوس: <strong dir="auto" className={isCorrectGuess(outcome.guess, round.word.word) ? 'is-right' : 'is-wrong'}>{outcome.guess}</strong>
           </p>}
         </div>
         {scored && <p className="end-tally">

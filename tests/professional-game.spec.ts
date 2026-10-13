@@ -35,8 +35,10 @@ async function earlyGuess(page: Page) {
 }
 
 async function accessibility(page: Page) {
+  // Firefox keeps animations inside a closed <details> pending; they play once it opens.
   await page.waitForFunction(() => !document.getAnimations().some((animation) =>
-    animation.playState === 'running' && animation.effect?.getComputedTiming().iterations !== Infinity))
+    animation.playState === 'running' && animation.effect?.getComputedTiming().iterations !== Infinity
+    && !((animation.effect as KeyframeEffect).target as Element | null)?.closest('details:not([open]) > :not(summary)')))
   const result = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21aa', 'wcag22aa']).analyze()
   expect(result.violations).toEqual([])
 }
@@ -72,7 +74,8 @@ test('challenge guessing keeps the answer hidden, supports editing and scores a 
   await input.fill(' ‌ ')
   await expect(submit).toBeDisabled()
   await input.fill('مدرسه')
-  await submit.click()
+  // Keyboard activation focuses the button first; WebKit does not focus buttons on click.
+  await submit.press('Enter')
   await expect(page.getByRole('dialog')).toContainText('مدرسه')
   await expect(page.getByRole('button', { name: 'تغییر حدس' })).toBeFocused()
   await page.keyboard.press('Escape')
@@ -116,7 +119,8 @@ test('revealing secrets requires confirmation and cancelling keeps the ballot an
   await page.clock.fastForward(60_000)
   await page.getByRole('button', { name: /بازیکن ۲/ }).click()
   const reveal = page.getByRole('button', { name: 'نمایش کلمه و نقش‌ها' })
-  await reveal.click()
+  // Keyboard activation focuses the button first; WebKit does not focus buttons on click.
+  await reveal.press('Enter')
   await expect(page.getByText(word, { exact: true })).toHaveCount(0)
   await expect(page.getByRole('button', { name: 'برگشت به رأی‌گیری' })).toBeFocused()
   await accessibility(page)

@@ -40,7 +40,7 @@ export function GuessScreen({ config, round, accused, onGuess, onHome }: GuessSc
     }}>
       <span className="guess-entry__badge">چالش حرفه‌ای · یک حدس</span>
       <label htmlFor="guess-word">حدس جاسوس</label>
-      <input id="guess-word" value={choice} onChange={(event) => setChoice(event.target.value)}
+      <input id="guess-word" dir="auto" value={choice} onChange={(event) => setChoice(event.target.value)}
         maxLength={80} autoComplete="off" autoCorrect="off" autoCapitalize="off" spellCheck={false}
         enterKeyHint="done" aria-describedby="guess-entry-help" placeholder="کلمه رو اینجا بنویس…" />
       <p id="guess-entry-help" className="play-note">اسم دقیق کلمه رو بنویسید؛ فاصله، نیم‌فاصله و شکل فارسی یا عربی «ی» و «ک» مهم نیست. مترادف یا بخشی از کلمه قبول نیست.</p>
