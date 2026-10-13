@@ -106,9 +106,9 @@ export function RevealScreen({ config, round, playerIndex, onNext, onHome }: Rev
           {!revealed ? <>
             <img className="card-bg-art" src={spyCardSrc} alt="" aria-hidden />
             <div className="card-text">
-              <h2 className="card-title card-title--muted">{name}</h2>
+              <h2 className="card-title card-title--muted" dir="auto">{name}</h2>
               <p className="card-sub">{phase === 'leaving'
-                ? (lastPlayer ? 'همه کارت‌ها پخش شد' : `نوبت ${nextName}`)
+                ? (lastPlayer ? 'همه کارت‌ها پخش شد' : <>نوبت <bdi className="name">{nextName}</bdi></>)
                 : 'برای دیدن نقش و کلمه، روی کارت بزن'}</p>
             </div>
           </> : <>
@@ -137,7 +137,7 @@ export function RevealScreen({ config, round, playerIndex, onNext, onHome }: Rev
         </Card>
       </div>
       <footer className="reveal-progress">
-        <p><span>کارت {toFa(playerIndex + 1)} از {toFa(config.playerCount)}</span><span>فقط {name} نگاه کنه</span></p>
+        <p><span>کارت {toFa(playerIndex + 1)} از {toFa(config.playerCount)}</span><span>فقط <bdi className="name">{name}</bdi> نگاه کنه</span></p>
         <div className="deal-pips" aria-hidden>
           {config.playerCount <= 12 && Array.from({ length: config.playerCount }, (_, index) => (
             <span key={index} className={`deal-pip${index < playerIndex ? ' is-done' : index === playerIndex ? ' is-current' : ''}`} />

@@ -1,6 +1,7 @@
 import { test, expect } from '@playwright/test'
 
-test('the installed app works offline without third-party requests', async ({ page, context, baseURL }) => {
+test('the installed app works offline without third-party requests', async ({ page, context, baseURL, browserName }) => {
+  test.skip(browserName === 'webkit', "Playwright's WebKit cannot route navigations through a service worker.")
   const external: string[] = []
   page.on('request', (request) => {
     const url = request.url()

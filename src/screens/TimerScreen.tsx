@@ -36,10 +36,11 @@ export function TimerScreen({ totalSeconds, onFinish, onSpyGuess, onHome }: Time
     onFinish(true)
   }, [remaining, onFinish])
 
-  // A ticking clock builds tension through the final seconds.
+  // A ticking clock builds tension through the final seconds. Only a new second
+  // ticks, so resuming does not add an off-beat tick.
   useEffect(() => {
     if (isRunning && remaining > 0 && remaining <= 10) cue('tick')
-  }, [remaining, isRunning])
+  }, [remaining])
 
   const cancelConfirmation = () => {
     setConfirming(null)

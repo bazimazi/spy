@@ -13,6 +13,12 @@ export default defineConfig({
     // Run the designed animations; the app ignores system motion preferences.
     trace: 'retain-on-failure',
   },
+  // Every engine runs the whole suite; pick one with `--project`.
+  projects: [
+    { name: 'chromium', use: { browserName: 'chromium' } },
+    { name: 'firefox', use: { browserName: 'firefox' } },
+    { name: 'webkit', use: { browserName: 'webkit' } },
+  ],
   webServer: {
     command: 'npm run test:serve',
     url: 'http://127.0.0.1:5191',

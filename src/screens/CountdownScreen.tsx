@@ -26,9 +26,10 @@ export function CountdownScreen({ onFinish, onHome }: CountdownScreenProps) {
       <h1 className="visually-hidden" tabIndex={-1} data-screen-title>گفت‌وگو شروع می‌شه</h1>
       <div className="play-focus">
         <img src={watchSrc} alt="" className="stopwatch" key={`watch-${n}`} aria-hidden="true" />
-        <div className="countdown-stage">
+        {/* The live region stays mounted; only the digit inside remounts to replay its animation. */}
+        <div className="countdown-stage" aria-live="polite">
           <span className="countdown-ring" key={`ring-${n}`} aria-hidden />
-          <div className="countdown" key={n} aria-live="polite">
+          <div className="countdown" key={n}>
             {toFa(Math.max(1, n))}
           </div>
         </div>

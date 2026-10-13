@@ -37,7 +37,7 @@ export function PlayersScreen({ config, setConfig, onClose }: PlayersScreenProps
           {Array.from({ length: config.playerCount }, (_, seat) => (
             <li key={seat} className="name-row" style={{ '--i': seat } as CSSProperties}>
               <span className="name-row__seat" aria-hidden>{toFa(seat + 1)}</span>
-              <input type="text" value={config.names[seat] ?? ''} maxLength={MAX_NAME_LENGTH}
+              <input type="text" dir="auto" value={config.names[seat] ?? ''} maxLength={MAX_NAME_LENGTH}
                 placeholder={`بازیکن ${toFa(seat + 1)}`} aria-label={`نام بازیکن ${toFa(seat + 1)}`}
                 autoComplete="off" enterKeyHint={seat === config.playerCount - 1 ? 'done' : 'next'}
                 onChange={(event) => rename(seat, event.target.value)} />
@@ -47,7 +47,8 @@ export function PlayersScreen({ config, setConfig, onClose }: PlayersScreenProps
       </div>
       <div className="footer-actions stack">
         <button type="button" className="btn" onClick={onClose}>ذخیره</button>
-        {config.names.some((name) => name.trim()) && (
+        {/* Names kept for seats beyond the current count are cleared too, but only visible ones show the action. */}
+        {config.names.slice(0, config.playerCount).some((name) => name.trim()) && (
           <button type="button" className="text-btn" onClick={() => setConfig({ names: [] })}>پاک کردن همه‌ی نام‌ها</button>
         )}
       </div>

@@ -1,7 +1,7 @@
 import { useEffect } from 'react'
 import type { CSSProperties } from 'react'
 import { GameplayScreen } from '../components/GameplayScreen'
-import { judgeAccusation, playerName } from '../game/logic'
+import { judgeAccusation, playerName, toFa } from '../game/logic'
 import { cue } from '../game/feedback'
 import type { GameConfig, RoundState } from '../game/types'
 import spyFaceSrc from '../assets/logo.svg'
@@ -17,14 +17,15 @@ interface VerdictScreenProps {
 /** Drumroll, then each suspect's card turns over and the verdict is stamped. */
 export function VerdictScreen({ config, round, accused, onContinue, onHome }: VerdictScreenProps) {
   const caught = judgeAccusation(round, accused) === 'caught'
-  const spyLabel = round.spyIndices.length > 1 ? 'جاسوس‌ها' : 'جاسوس'
+  const severalSpies = round.spyIndices.length > 1
+  const innocents = accused.filter((seat) => !round.spyIndices.includes(seat)).length
 
   useEffect(() => cue('drumroll'), [])
 
   return <GameplayScreen className="verdict-screen" onHome={onHome}>
     <h1 className="title play-heading" tabIndex={-1} data-screen-title>رأی جمع</h1>
     <p className="verdict-suspense" aria-hidden>و نقش واقعی<span className="verdict-dots"><span>.</span><span>.</span><span>.</span></span></p>
-    <ul className="verdict-cards" style={{ '--count': accused.length } as CSSProperties}>
+    <ul className={`verdict-cards${accused.length > 3 ? ' is-many' : ''}`} style={{ '--count': accused.length } as CSSProperties}>
       {accused.map((seat, index) => {
         const isSpy = round.spyIndices.includes(seat)
         return <li key={seat} className={`verdict-card${isSpy ? ' is-spy' : ''}`} style={{ '--i': index } as CSSProperties}>
@@ -32,7 +33,7 @@ export function VerdictScreen({ config, round, accused, onContinue, onHome }: Ve
             <span className="verdict-card__face verdict-card__face--back" aria-hidden>?</span>
             <span className="verdict-card__face verdict-card__face--front">
               {isSpy && <img src={spyFaceSrc} alt="" aria-hidden />}
-              <strong>{playerName(config.names, seat)}</strong>
+              <strong dir="auto">{playerName(config.names, seat)}</strong>
               <span>{isSpy ? 'جاسوس بود!' : 'شهروند بود!'}</span>
             </span>
           </span>
@@ -42,14 +43,17 @@ export function VerdictScreen({ config, round, accused, onContinue, onHome }: Ve
     <div className="verdict-result" style={{ '--count': accused.length } as CSSProperties}>
       <p className={`verdict-stamp${caught ? ' is-caught' : ' is-wrong'}`}
         onAnimationStart={(event) => { if (event.animationName === 'stamp-in') cue('stamp') }}>
-        {caught ? 'گیر افتاد!' : 'اشتباه شد!'}
+        {caught ? severalSpies ? 'گیر افتادند!' : 'گیر افتاد!' : 'اشتباه شد!'}
       </p>
       <p className="play-instruction">{caught
-        ? `${spyLabel} یک شانس آخر داره: اگه کلمه رو درست حدس بزنه، باز هم می‌بره.`
-        : `یک شهروند بی‌گناه متهم شد؛ ${spyLabel} بردند!`}</p>
+        ? severalSpies
+          ? 'جاسوس‌ها یک شانس آخر دارن: اگه کلمه رو درست حدس بزنن، باز هم می‌برن.'
+          : 'جاسوس یک شانس آخر داره: اگه کلمه رو درست حدس بزنه، باز هم می‌بره.'
+        : `${innocents > 1 ? `${toFa(innocents)} شهروند بی‌گناه متهم شدند` : 'یک شهروند بی‌گناه متهم شد'}؛ ${
+          severalSpies ? 'جاسوس‌ها بردند!' : 'جاسوس برد!'}`}</p>
     </div>
     <div className="footer-actions verdict-actions" style={{ '--count': accused.length } as CSSProperties}>
-      <button type="button" className="btn" onClick={onContinue}>{caught ? 'شانس آخر جاسوس' : 'نمایش نتیجه'}</button>
+      <button type="button" className="btn" onClick={onContinue}>{caught ? severalSpies ? 'شانس آخر جاسوس‌ها' : 'شانس آخر جاسوس' : 'نمایش نتیجه'}</button>
     </div>
   </GameplayScreen>
 }

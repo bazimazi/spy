@@ -160,6 +160,8 @@ function SettingStepper({ id, icon, label, value, min, max, onChange }: SettingS
   }
 
   const stepButton = (delta: number) => ({
+    // `set` plays the select cue, so the global tap cue would double it.
+    'data-cue': 'none',
     onPointerDown: (event: PointerEvent<HTMLButtonElement>) => {
       if (event.button !== 0) return
       event.currentTarget.setPointerCapture(event.pointerId)
@@ -246,7 +248,7 @@ function CategoryPicker({ value, onChange }: { value: Category, onChange: (value
           return (
             <button key={option.value} ref={(node) => { chips.current[index] = node }} type="button" role="radio"
               className={`chip${checked ? ' chip--on' : ''}`} aria-checked={checked} tabIndex={checked ? 0 : -1}
-              onClick={() => select(index)} onKeyDown={(event) => onKeyDown(event, index)}>
+              data-cue="none" onClick={() => select(index)} onKeyDown={(event) => onKeyDown(event, index)}>
               {option.label}
             </button>
           )

@@ -8,7 +8,9 @@ export function RoundExitButton({ onExit, onRequest, onCancel }: {
 }) {
   const [confirming, setConfirming] = useState(false)
   const request = () => { onRequest?.(); setConfirming(true) }
-  useBackButton(request, !confirming)
+  // Stays registered while the dialog is open (the dialog handles back first), so
+  // cancelling never moves this handler above panels the screen opened earlier.
+  useBackButton(request)
   return <>
     <button type="button" className="icon-btn" aria-label="لغو دور و بازگشت به خانه"
       onClick={request}><HomeIcon /></button>

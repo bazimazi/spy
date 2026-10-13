@@ -1,8 +1,7 @@
 /** Inline SVG icon set. Keeps the build asset-free and themable via currentColor. */
-import type { HTMLAttributes, SVGProps } from 'react'
+import type { SVGProps } from 'react'
 
 type IconProps = SVGProps<SVGSVGElement>
-type EmojiIconProps = HTMLAttributes<HTMLSpanElement>
 
 const baseProps = {
   width: 24,
@@ -14,21 +13,6 @@ const baseProps = {
   strokeLinecap: 'round' as const,
   strokeLinejoin: 'round' as const,
   'aria-hidden': true,
-}
-
-/** Emoji icons rendered through the OS color emoji font so they keep their
- *  original multi-color glyph (used as a fallback for unstyled rows). */
-function EmojiIcon({ children, className, ...rest }: EmojiIconProps) {
-  return (
-    <span
-      role="img"
-      aria-hidden
-      className={`emoji-icon${className ? ` ${className}` : ''}`}
-      {...rest}
-    >
-      {children}
-    </span>
-  )
 }
 
 /** Solid glyph used by the home-screen settings rows. Vector redraw of the
@@ -110,9 +94,6 @@ export function ClockIcon(props: IconProps) {
     </SettingIcon>
   )
 }
-
-/** Kept for callers that still want the emoji version. */
-export { EmojiIcon }
 
 export function CheckIcon(props: IconProps) {
   return (

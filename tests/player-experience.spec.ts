@@ -266,7 +266,8 @@ test('a round can be cancelled safely with keyboard-accessible confirmation', as
   await prepare(page)
   await page.getByRole('button', { name: 'بزن بریم!', exact: true }).click()
   await page.getByRole('button', { name: 'دیدن کارت بازیکن ۱' }).click()
-  await page.getByRole('button', { name: 'لغو دور و بازگشت به خانه' }).click()
+  // Keyboard activation focuses the button first; WebKit does not focus buttons on click.
+  await page.getByRole('button', { name: 'لغو دور و بازگشت به خانه' }).press('Enter')
   await expect(page.locator('.secret-word')).toHaveCount(0)
   await expect(page.getByRole('dialog')).toBeVisible()
   await expect(page.getByRole('button', { name: 'ادامه‌ی بازی' })).toBeFocused()
@@ -279,10 +280,16 @@ test('a round can be cancelled safely with keyboard-accessible confirmation', as
 })
 
 test('browser back closes screens and dialogs, asks before cancelling, and leaves from home', async ({ page }) => {
+  // Firefox replaces the initial about:blank, so give every engine a page to go back to.
+  await page.route('**/start', (route) => route.fulfill({ contentType: 'text/html', body: '<title>start</title>' }))
+  await page.goto('/start')
   await prepare(page)
   const home = page.getByRole('heading', { name: 'جاسوس', exact: true })
   await page.getByRole('button', { name: 'راهنمای بازی' }).click()
   await expect(home).toHaveCount(0)
+  // The guide scrolls inside its frame, so its action stays on screen.
+  const done = (await page.getByRole('button', { name: 'متوجه شدم' }).boundingBox())!
+  expect(done.y + done.height).toBeLessThanOrEqual(740)
   await page.goBack()
   await expect(home).toBeFocused()
 
@@ -300,7 +307,7 @@ test('browser back closes screens and dialogs, asks before cancelling, and leave
   await expect(home).toBeFocused()
 
   await page.goBack()
-  await expect(page).toHaveURL('about:blank')
+  await expect(page).toHaveURL(/\/start$/)
 })
 
 test('back folds the timer tools before offering to cancel the round', async ({ page }) => {
@@ -315,6 +322,16 @@ test('back folds the timer tools before offering to cancel the round', async ({ 
   await page.goBack()
   await expect(page.getByRole('dialog')).toHaveCount(0)
   await expect(page.getByRole('timer')).toHaveText('۰۱:۰۰')
+
+  // Cancelling the home confirmation keeps the panel ahead of it for back.
+  await page.getByText('زمان و راهنما').click()
+  await expect(page.locator('.timer-tools')).toHaveAttribute('open', '')
+  await page.getByRole('button', { name: 'لغو دور و بازگشت به خانه' }).click()
+  await page.getByRole('dialog').getByRole('button', { name: 'ادامه‌ی بازی' }).click()
+  await expect(page.getByRole('dialog')).toHaveCount(0)
+  await page.goBack()
+  await expect(page.locator('.timer-tools')).not.toHaveAttribute('open', '')
+  await expect(page.getByRole('dialog')).toHaveCount(0)
 })
 
 test('pause, extension, resume, and cancelling an early finish preserve exact time', async ({ page }) => {
@@ -551,6 +568,7 @@ test('gameplay artboards keep time, instructions, and primary actions readable a
 })
 
 test('mobile, landscape, and desktop layouts have reachable actions and no horizontal overflow', async ({ page }, testInfo) => {
+  test.setTimeout(90_000)
   const errors: string[] = []
   page.on('pageerror', (error) => errors.push(error.message))
   for (const viewport of [{ width: 320, height: 568 }, { width: 360, height: 740 }, { width: 363, height: 692 }, { width: 390, height: 844 }, { width: 430, height: 932 }, { width: 740, height: 360 }, { width: 1280, height: 800 }]) {
@@ -690,6 +708,7 @@ test('the in-app vote, last-chance guess, and scoreboard decide and record each 
   }
   await page.getByRole('button', { name: 'شروع گفت‌وگو' }).click()
   await page.clock.fastForward(3_000)
+  await expect(page.getByRole('timer')).toHaveText('۰۱:۰۰')
   await page.clock.fastForward(60_000)
   await expect(page.getByRole('heading', { name: 'وقت تصمیمه!' })).toBeFocused()
   await page.getByRole('button', { name: /بازیکن ۱/ }).click()
@@ -777,4 +796,68 @@ test('sound and vibration settings persist and never block play', async ({ page 
   await deal(page)
   expect(await vibrations()).toBe(0)
   expect(errors).toEqual([])
+})
+
+test('steppers and category chips give one feedback cue per change', async ({ page }) => {
+  await page.addInitScript(() => {
+    const calls: unknown[] = []
+    Object.defineProperty(window, 'vibrations', { value: calls })
+    Object.defineProperty(navigator, 'vibrate', { configurable: true, value: (pattern: unknown) => calls.push(pattern) > 0 })
+  })
+  const vibrations = () => page.evaluate(() => (window as unknown as { vibrations: unknown[] }).vibrations.splice(0).length)
+  await prepare(page)
+  await page.getByRole('button', { name: 'زیاد کردن تعداد بازیکن‌ها' }).click()
+  await expect(page.getByRole('spinbutton', { name: 'تعداد بازیکن‌ها' })).toHaveAttribute('aria-valuenow', '4')
+  expect(await vibrations()).toBe(1)
+  await page.getByText('تنظیمات بیشتر').click()
+  await vibrations()
+  await page.getByRole('radio', { name: 'غذا' }).click()
+  await expect(page.getByRole('radio', { name: 'غذا' })).toHaveAttribute('aria-checked', 'true')
+  expect(await vibrations()).toBe(1)
+})
+
+test('several spies are named in agreement and the verdict action waits for the stamp', async ({ page }) => {
+  await prepare(page, { playerCount: 5, spyCount: 2, names: ['', '', 'Alexandria Smith'] })
+  await page.getByRole('button', { name: 'بزن بریم!', exact: true }).click()
+  const roles: string[] = []
+  for (let index = 0; index < 5; index++) {
+    await page.locator('.card.is-interactive').click()
+    roles.push(await page.locator('.secret-word').innerText())
+    await page.getByRole('button', { name: /کارت رو پنهان کن/ }).click()
+  }
+  await page.getByRole('button', { name: 'شروع گفت‌وگو' }).click()
+  await page.getByRole('button', { name: 'پایان گفت‌وگو', exact: true }).click()
+  await page.getByRole('button', { name: 'بریم برای تصمیم نهایی' }).click()
+  // A Latin name keeps its own direction, so an ellipsis would clip its end, not its start.
+  await expect(page.locator('.suspect__name').nth(2)).toHaveCSS('direction', 'ltr')
+  for (const [seat, role] of roles.entries()) if (role === 'جاسوس') await page.locator('.suspect').nth(seat).click()
+  await page.getByRole('button', { name: 'رأی نهایی', exact: true }).click()
+  const next = page.getByRole('button', { name: 'شانس آخر جاسوس‌ها' })
+  await expect(next).toBeHidden()
+  await expect(page.getByText('گیر افتادند!')).toBeAttached()
+  await expect(page.getByText(/جاسوس‌ها یک شانس آخر دارن/)).toBeAttached()
+  await next.click()
+  await expect(page.locator('.play-instruction')).toContainText('گیر افتادند؛')
+  const word = roles.find((role) => role !== 'جاسوس')!
+  const wrong = (await page.locator('.guess-option').allInnerTexts()).find((option) => option !== word)!
+  await page.getByRole('button', { name: wrong, exact: true }).click()
+  await page.getByRole('button', { name: 'ثبت حدس' }).click()
+  await expect(page.getByText('جاسوس‌ها گیر افتادند و کلمه رو اشتباه حدس زدند.')).toBeVisible()
+})
+
+test('a double tap on the last action cannot skip the result into a new round', async ({ page }) => {
+  await prepare(page)
+  await deal(page)
+  await page.getByRole('button', { name: 'شروع گفت‌وگو' }).click()
+  await page.getByText('زمان و راهنما').click()
+  await page.getByRole('button', { name: 'جاسوسم؛ کلمه رو حدس می‌زنم' }).click()
+  await page.getByRole('button', { name: 'آره، حدس می‌زنم' }).click()
+  await page.locator('.guess-option').first().click()
+  // The second tap lands where «دوباره بزن بریم!» appears.
+  await page.getByRole('button', { name: 'ثبت حدس' }).dblclick()
+  await expect(page.getByRole('heading', { name: 'پایان دور ۱' })).toBeAttached()
+  await page.waitForTimeout(1_000)
+  await expect(page.getByRole('heading', { name: 'پایان دور ۱' })).toBeAttached()
+  await page.getByRole('button', { name: 'دوباره بزن بریم!' }).click()
+  await expect(page.getByRole('button', { name: 'دیدن کارت بازیکن ۱' })).toBeVisible()
 })

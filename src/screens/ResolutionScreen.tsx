@@ -42,7 +42,7 @@ export function ResolutionScreen({ config, timedOut, onAccuse, onReveal, onHome 
         return <button key={seat} type="button" className={`suspect${selected ? ' is-selected' : ''}`}
           aria-pressed={selected} data-cue="select" onClick={() => toggle(seat)}>
           <span className="suspect__seat" aria-hidden>{toFa(seat + 1)}</span>
-          <span className="suspect__name">{playerName(config.names, seat)}</span>
+          <span className="suspect__name" dir="auto">{playerName(config.names, seat)}</span>
         </button>
       })}
     </div>

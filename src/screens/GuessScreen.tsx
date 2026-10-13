@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { Fragment, useState } from 'react'
 import { GameplayScreen } from '../components/GameplayScreen'
 import { guessOptions, playerName } from '../game/logic'
 import type { GameConfig, RoundState } from '../game/types'
@@ -17,14 +17,18 @@ export function GuessScreen({ config, round, accused, onGuess, onHome }: GuessSc
   const [options] = useState(() => guessOptions(round.word))
   const [choice, setChoice] = useState<string | null>(null)
   const early = accused.length === 0
-  const caughtNames = accused.map((seat) => playerName(config.names, seat)).join('، ')
 
   return <GameplayScreen className="guess-screen" onHome={onHome}>
     <img className="guess-face" src={spyFaceSrc} alt="" aria-hidden />
     <h1 className="title play-heading" tabIndex={-1} data-screen-title>جاسوس، کلمه چیه؟</h1>
     <p className="play-instruction">{early
       ? 'گفت‌وگو متوقف شد. حدس درست: برد جاسوس‌ها با ۳ امتیاز. حدس غلط: برد شهروندها.'
-      : `${caughtNames} گیر افتاد؛ حدس درست هنوز می‌تونه بازی رو ببره.`}</p>
+      : <>
+        {accused.map((seat, index) => <Fragment key={seat}>
+          {index > 0 && '، '}<bdi className="name">{playerName(config.names, seat)}</bdi>
+        </Fragment>)}
+        {` گیر ${accused.length > 1 ? 'افتادند' : 'افتاد'}؛ حدس درست هنوز می‌تونه بازی رو ببره.`}
+      </>}</p>
     <div className="guess-grid" role="group" aria-label="گزینه‌های حدس جاسوس">
       {options.map((word) => (
         <button key={word} type="button" className={`guess-option${choice === word ? ' is-selected' : ''}`}

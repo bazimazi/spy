@@ -18,9 +18,9 @@ npm install
 npm run dev      # start dev server
 npm run build    # type-check + production build
 npm run preview  # preview the build
-npx playwright install chromium  # one-time browser setup for tests
-npm test         # builds and tests the production app
-npm run test:ui  # interactive test runner
+npx playwright install chromium firefox webkit  # one-time browser setup for tests
+npm test         # builds and tests the production app in Chromium, Firefox, and WebKit
+npm run test:ui  # interactive test runner (`npm test -- --project=chromium` for one engine)
 npm run cap:sync # build and copy the web bundle into android/ and ios/
 npm run android  # sync, then open Android Studio
 npm run ios      # sync, then open Xcode (macOS only)
@@ -88,7 +88,7 @@ the reveal and leaves the result to the group, as in earlier versions.
 
 - **Home** - choose 3-30 players, 1-8 spies (fewer than players), 1-30 minutes,
   a word category, and the optional spy hint. The three main settings use
-  dropdowns matching the original design; category, hint, player names, and
+  compact − value + steppers (hold to repeat, arrow keys on the value); category, hint, player names, and
   vibration are under “تنظیمات بیشتر”, and sound is a top-corner toggle.
   Valid preferences survive reloads.
 - **Names** - optional names by seat (16 characters). Blank seats stay
@@ -197,7 +197,7 @@ timing, denied wake locks, and unchanged animation behavior under both system
 motion preferences. Axe checks the major screens, expanded tools, role lists,
 and a confirmation dialog after all finite animations finish.
 Screenshots are generated for 320×568, 360×740, 363×692 (the supplied reference
-size), 390×844, 740×360, and 1280×800; layout checks include horizontal overflow,
+size), 390×844, 430×932, 740×360, and 1280×800; layout checks include horizontal overflow,
 reachable start, handoff, and gameplay actions, artwork placement, and card-text
 clipping. Gameplay captures include all three countdown digits, the initial
 timer, 03:20, the last-ten-seconds warning, final decision, result, and expanded
@@ -208,8 +208,9 @@ its word history; only preferences (including names and sound settings)
 persist, and the session scoreboard stays in memory. The app records the
 group's agreed vote; how the group reaches it is up to them. Real iOS/Android screen-lock behavior, screen readers,
 and social balance still need device and group playtesting. Browsers may deny
-wake locks. Gameplay needs no server once loaded, but offline reload/install
-support is not implemented.
+wake locks. Gameplay needs no server once loaded, and the service worker
+serves reloads offline. Playwright's WebKit cannot route navigations through a
+service worker, so the offline reload test runs in Chromium and Firefox only.
 
 The next useful research is three Persian-speaking groups (new and experienced
 players, 3-8 people), playing several rounds each. Record setup time, requests

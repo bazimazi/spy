@@ -27,7 +27,7 @@ export function ReadyScreen({ config, round, roundNumber, onStart, onHome }: {
         <span className={`roulette${landed ? ' is-landed' : ''}`}>
           <span className="roulette__strip" aria-hidden style={{ '--steps': SPINS } as CSSProperties}
             onAnimationEnd={() => { setLanded(true); cue('ding') }}>
-            {strip.map((name, index) => <span key={index} className="roulette__item">{name}</span>)}
+            {strip.map((name, index) => <span key={index} className="roulette__item" dir="auto">{name}</span>)}
           </span>
           <span className="visually-hidden">{starter}</span>
         </span>

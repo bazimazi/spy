@@ -42,6 +42,7 @@ export function GuideScreen({ onClose }: GuideScreenProps) {
   useBackButton(onClose)
   return (
     <Screen
+      className="guide-screen"
       topActions={
         <button type="button" className="icon-btn" aria-label="بازگشت" onClick={onClose}>
           <ChevronRightIcon />
@@ -52,7 +53,8 @@ export function GuideScreen({ onClose }: GuideScreenProps) {
         راهنمای بازی
       </h1>
 
-      <div className="scroll-area">
+      {/* Scrolls inside the frame, so keyboard users can focus it to scroll. */}
+      <div className="scroll-area" role="region" aria-label="متن راهنما" tabIndex={0}>
         <div className="guide-list">
           {sections.map((s, index) => (
             <article key={s.title} className="guide-item" style={{ '--i': index } as CSSProperties}>
